@@ -26,9 +26,9 @@
 from loguru import logger
 from notifiers.logging import NotificationHandler
 
-import vk_api_dev
-import aux_dev
-import processing_dev
+import vk_api
+import aux
+import processing
 
 
 DEBUG_ENABLED = False
@@ -36,7 +36,7 @@ DEBUG_ENABLED = False
 
 @logger.catch
 def main():
-    aux = aux_dev.aux()
+    aux = aux.aux()
     params = aux.read_params()
     log_file = params['VK']['log_path']
     cases_log_file = params['VK']['cases_log_path']
@@ -57,14 +57,14 @@ def main():
     #     'chat_id': params['TLG']['VK_MOD']['chat_id']
     # }
     # tg_handler = NotificationHandler("telegram", defaults = tg_params)
-    aux = aux_dev.aux(main_log)
-    processing = processing_dev.processing(aux, main_log)
+    aux = aux.aux(main_log)
+    processing = processing.processing(aux, main_log)
 
     # logger.add(tg_handler, format = "{message}", level = "INFO")
     main_log.info(f"# VK Moderator bot is (re)starting...")
 
     # Create VK API object
-    vk = vk_api_dev.vk_api(aux, logger)
+    vk = vk_api.vk_api(aux, logger)
 
     # Get longpoll server parameters
     main_log.debug("# Get LongPoll server parameters to listen")

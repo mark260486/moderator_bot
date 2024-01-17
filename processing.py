@@ -4,7 +4,7 @@
 
 
 from loguru import logger
-import filter_dev
+import filter
 
 
 DEBUG_ENABLED = False
@@ -13,7 +13,7 @@ DEBUG_ENABLED = False
 class processing:
     def __init__(self, aux, processing_logger = None) -> None:
         self.params = aux.read_params()
-        self.filter = filter_dev.filter(aux, processing_logger)
+        self.filter = filter.filter(aux, processing_logger)
         if processing_logger == None:
             if DEBUG_ENABLED:
                 logger.add(self.params['processing_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
