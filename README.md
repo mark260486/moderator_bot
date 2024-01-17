@@ -1,1 +1,1 @@
-# moderator_bot
+Simple moderator bot for VK/Telegram chats and comments.
