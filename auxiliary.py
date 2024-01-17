@@ -90,7 +90,7 @@ class auxiliary:
     # Read parameters from file
     @logger.catch
     def read_params(self):
-        with open(PARAMS_FILE, "r") as params_file:
+        with open(PARAMS_FILE, "r", encoding="UTF-8") as params_file:
             return json.loads(params_file.read())
 
 
@@ -105,6 +105,7 @@ class auxiliary:
     # Replacing Latin/Number/Other characters with Cyrillic
     @logger.catch
     def lat_to_cyr(self, text, dictionary):
+        self.logger.debug(f"# Processing Latyn to Cyrillic conversion for: {text}")
         text = text.lower()
         for key in dictionary:
             for character in text:

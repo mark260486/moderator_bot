@@ -21,6 +21,7 @@
 #   - change logging to JSON
 #   - all bots in one chat
 #   - try to use regexes for different susp/curse words
+#   - maybe is it worth to make all bot async
 
 
 from loguru import logger
@@ -36,7 +37,7 @@ DEBUG_ENABLED = False
 
 @logger.catch
 def main():
-    aux = auxiliary.aux()
+    aux = auxiliary.auxiliary()
     params = aux.read_params()
     log_file = params['VK']['log_path']
     cases_log_file = params['VK']['cases_log_path']
@@ -52,12 +53,13 @@ def main():
     cases_log = logger.bind(name = "cases_log")
 
     # Telegram messages logging
-    # tg_params = {
-    #     'token': params['TLG']['VK_MOD']['key'],
-    #     'chat_id': params['TLG']['VK_MOD']['chat_id']
-    # }
-    # tg_handler = NotificationHandler("telegram", defaults = tg_params)
-    aux = auxiliary.aux(main_log)
+    tg_params = {
+        'token': params['TLG']['VK_MOD']['key'],
+        'chat_id': params['TLG']['VK_MOD']['chat_id']
+    }
+    tg_handler = NotificationHandler("telegram", defaults = tg_params)
+    logger.add(tg_handler, format = "{message}", level = "INFO")
+    aux = auxiliary.auxiliary(main_log)
     proc = processing.processing(aux, main_log)
 
     # logger.add(tg_handler, format = "{message}", level = "INFO")

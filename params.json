@@ -6,12 +6,12 @@
         "VK_API": {
             "key": "VK_API_KEY",
             "url": "https://api.vk.com/method/",
-            "group_id": "VK_GROUP_ID",
+            "group_id": 0,
             "delete_for_all": 1,
             "version": "5.131"
         },
         "chats": {
-            "2000000001": "CHAT_NAME"
+            "2000000001": "Main chat"
         },
         "log_path": "/var/log/moderator_bot/vk_moderator.log",
         "cases_log_path": "/var/log/moderator_bot/vk_moderator_cases.log",
@@ -23,14 +23,13 @@
     "TLG": {
         "TLG_MOD": {
             "key": "TLG_API_KEY",
-            "chat_id": "CHAT_ID",
-            "log_chat_id": "LOG_CHAT_ID",
+            "chat_id": "0",
+            "log_chat_id": "0",
             "api_url": "https://api.telegram.org/botTLG_KEY/sendMessage"
         },
         "VK_MOD": {
             "key": "TLG_API_KEY",
-            "chat_id": "CHAT_ID",
-            "log_chat_id": "LOG_CHAT_ID",
+            "chat_id": "0",
             "api_url": "https://api.telegram.org/botTLG_KEY/sendMessage"
         },
         "log_path": "/var/log/moderator_bot/tlg_moderator.log",
@@ -45,7 +44,7 @@
             "spam_list": [
                 "@all","@online","@все","alfa","bit.do","bit.ly","bitly.com","cashback","clck.ru","click","cutt","decordar.ru","gclnk.com","goo.su",
                 "guest.link","ify.ac","lnnk","ls.gd","nyшkuнc","nyшkuнс","ok.me","page.link","rebrandly","shorturl.cool","shrt-l.ink","t.me","th.link",
-                "tiktok","tinyurl","u.to","vk.cc","vk.me","xxxsports.ru","yurist-forum","пyшкинc","пушкинс", "belea.link"
+                "tiktok","tinyurl","u.to","vk.cc","vk.me","xxxsports.ru","yurist-forum","пyшкинc","пушкинс","belea.link"
             ],
             "curses_list": [
                 "eбaлo","eбaн","eбан","nuдор","nuзд","nидор","nизд","ахуен","ахуеть","бля","вьеб","вьёб","далбаеб","даун","доебал","долбаеб","долбоеб","дроч",
@@ -69,40 +68,40 @@
             "блямб","блях","бляш","влюб","греб","дуб","заглуб","истреб","канальн","колеб","обляп","оглоб","озлоб","оскорб","пособ","потреб",
             "радиоактив","раздроб","расслаб","саб","углуб","укрыт"
         ],
-        "dict": {
-            "а": ["a", "α", "@", "4"],
-            "б": ["6", "b"],
-            "в": ["b", "v"],
-            "г": ["r", "g"],
-            "д": ["d"],
-            "е": ["e"],
-            "ё": ["e"],
-            "ж": ["zh", "*"],
-            "з": ["3", "z"],
-            "и": ["u", "i"],
-            "й": ["u", "y", "i"],
-            "к": ["k", "i{", "|{"],
-            "л": ["l"],
-            "м": ["m"],
-            "н": ["n", "h"],
-            "о": ["o", "0"],
-            "п": ["n", "p"],
-            "р": ["r", "p", "ρ"],
-            "с": ["c", "s"],
-            "т": ["t", "7"],
-            "у": ["y", "u"],
-            "ф": ["f"],
-            "х": ["x", "}{", "h"],
-            "ц": ["c", "ts"],
-            "ч": ["ch"],
-            "ш": ["sh"],
-            "щ": ["sch"],
-            "ь": ["b"],
-            "ы": ["bi"],
-            "ъ": [],
-            "э": ["e"],
-            "ю": ["io"],
-            "я": ["ya"]
+    "dict": {
+        "а": ["a", "α", "@", "4"],
+        "б": ["6", "b"],
+        "в": ["b", "v"],
+        "г": ["r", "g"],
+        "д": ["d"],
+        "е": ["e"],
+        "ё": ["e"],
+        "ж": ["zh", "*"],
+        "з": ["3", "z"],
+        "и": ["u", "i"],
+        "й": ["u", "y", "i"],
+        "к": ["k", "i{", "|{"],
+        "л": ["l"],
+        "м": ["m"],
+        "н": ["n", "h"],
+        "о": ["o", "0"],
+        "п": ["n", "p"],
+        "р": ["r", "p", "ρ"],
+        "с": ["c", "s"],
+        "т": ["t", "7"],
+        "у": ["y", "u"],
+        "ф": ["f"],
+        "х": ["x", "}{", "h"],
+        "ц": ["c", "ts"],
+        "ч": ["ch"],
+        "ш": ["sh"],
+        "щ": ["sch"],
+        "ь": ["b"],
+        "ы": ["bi"],
+        "ъ": [],
+        "э": ["e"],
+        "ю": ["io"],
+        "я": ["ya"]
         }
     }
 }

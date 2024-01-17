@@ -13,6 +13,7 @@ DEBUG_ENABLED = False
 class filter:
     def __init__(self, aux, filter_logger = None) -> None:
         self.params = aux.read_params()
+        self.aux = aux
         if filter_logger == None:
             if DEBUG_ENABLED:
                 logger.add(self.params['filter_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -86,13 +87,13 @@ class filter:
 
         self.logger.debug(f"# Checking text: {text_to_check}")
         # Check if message contains mishmash and user name is in English
-        if self.check_for_english(text_to_check) and self.check_for_english(username):
-            msg = f"{username} with {text_to_check} was catched."
-            self.logger.debug(f"# {msg}")
-            self.result['result'] = 1
-            self.result['text'] = msg
-            self.result['case'] = "сообщение на латинице, имя пользователя на латинице, реклама."
-            return self.result
+        # if self.check_for_english(text_to_check) and self.check_for_english(username):
+        #     msg = f"{username} with {text_to_check} was catched."
+        #     self.logger.debug(f"# {msg}")
+        #     self.result['result'] = 1
+        #     self.result['text'] = msg
+        #     self.result['case'] = "сообщение на латинице, имя пользователя на латинице, реклама."
+        #     return self.result
 
         # Check if message contains mishmash
         # if self.check_for_english(text_to_check):
@@ -109,7 +110,7 @@ class filter:
             return spam_list_check
 
         # Replace Latin characters with Cyrillic
-        text_to_check = self.lat_to_cyr(text_to_check, self.params['word_db']['dict'])
+        text_to_check = self.aux.lat_to_cyr(text_to_check, self.params['word_db']['dict'])
 
         # Curses list check
         curses_list_check = self.check_for_curses(text_to_check)

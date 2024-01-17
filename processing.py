@@ -1,5 +1,6 @@
-# Reviewed: January, 10
+# Reviewed: January, 17
 # ToDo:
+#   - make processing for telegram messages
 #   - comment all
 
 
@@ -58,6 +59,8 @@ class processing:
         main_log.debug(f"# New message: {message}; New TS: {vk_api.lp_ts}; User: {username}")
         filter_result = self.filter.filter_response(message, username, attachments)
         main_log.debug(f"# Filter result: {filter_result}")
+        if filter_result == None: 
+            return
         # If filter returns 1 - we catch something
         if filter_result['result'] == 1:
             main_log.info(f"# Filter result: {filter_result}")
