@@ -1,4 +1,4 @@
-# Reviewed: January 10, 2024
+# Reviewed: January 17, 2024
 # ToDo:
 # - verify params from file;
 # - process different attachments types - in progress. Repost and link are done.
@@ -27,7 +27,7 @@ from loguru import logger
 from notifiers.logging import NotificationHandler
 
 import vk_api
-import aux
+import auxiliary
 import processing
 
 
@@ -36,7 +36,7 @@ DEBUG_ENABLED = False
 
 @logger.catch
 def main():
-    aux = aux.aux()
+    aux = auxiliary.aux()
     params = aux.read_params()
     log_file = params['VK']['log_path']
     cases_log_file = params['VK']['cases_log_path']
@@ -57,8 +57,8 @@ def main():
     #     'chat_id': params['TLG']['VK_MOD']['chat_id']
     # }
     # tg_handler = NotificationHandler("telegram", defaults = tg_params)
-    aux = aux.aux(main_log)
-    processing = processing.processing(aux, main_log)
+    aux = auxiliary.aux(main_log)
+    proc = processing.processing(aux, main_log)
 
     # logger.add(tg_handler, format = "{message}", level = "INFO")
     main_log.info(f"# VK Moderator bot is (re)starting...")
@@ -82,7 +82,7 @@ def main():
             if longpoll_result['response_type'] != "":
                 response_type = longpoll_result['response_type']
                 # Response type, like 'message' or 'comment' will call according function from Filter
-                function_to_call = getattr(processing, response_type)
+                function_to_call = getattr(proc, response_type)
                 function_to_call(longpoll_result['response'], vk, main_log, cases_log)
     else:
         logger.error(f"# Get Longpoll server parameters error. {result}")

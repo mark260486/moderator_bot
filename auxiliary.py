@@ -1,4 +1,4 @@
-# Reviewed: January, 10
+# Reviewed: January, 17
 # ToDo:
 #   - comment all
 
@@ -13,7 +13,7 @@ DEBUG_ENABLED = False
 PARAMS_FILE = "params.json"
 
 
-class aux:
+class auxiliary:
     def __init__(self, aux_logger = None) -> None:
         self.params = self.read_params()
         if aux_logger == None:
