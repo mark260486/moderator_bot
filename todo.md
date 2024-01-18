@@ -4,6 +4,8 @@
 - Make instructions for installation and usage;
 - Make requirements.txt;
 - Make project description;
+- Comment all;
+- Make tooltips for functions;
 #### Telegram interactivity
 * Make menu button in Telegram to download bot logs;
     + Button - done;

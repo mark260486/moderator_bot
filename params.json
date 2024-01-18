@@ -23,13 +23,22 @@
     "TLG": {
         "TLG_MOD": {
             "key": "TLG_API_KEY",
+<<<<<<< HEAD
             "chat_id": "0",
             "log_chat_id": "0",
+=======
+            "chat_id": "000000",
+            "log_chat_id": "000000",
+>>>>>>> 7e4f7f0 (Fix keys)
             "api_url": "https://api.telegram.org/botTLG_KEY/sendMessage"
         },
         "VK_MOD": {
             "key": "TLG_API_KEY",
+<<<<<<< HEAD
             "chat_id": "0",
+=======
+            "chat_id": "000000",
+>>>>>>> 7e4f7f0 (Fix keys)
             "api_url": "https://api.telegram.org/botTLG_KEY/sendMessage"
         },
         "log_path": "/var/log/moderator_bot/tlg_moderator.log",
