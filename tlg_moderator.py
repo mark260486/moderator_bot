@@ -1,4 +1,4 @@
-# Reviewed: January 17, 2024
+# Reviewed: January 18, 2024
 
 from telegram import (Update, ChatMember, ChatMemberUpdated)
 from telegram.ext import (Updater, CallbackContext, ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
@@ -90,7 +90,7 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
         else:
             msg = f"{member_name} покинул канал. Удачи!"
     logger.debug(f"Cause name: {cause_name}, member name: {member_name}")
-    await context.bot.send_message(params['TLG_MOD']['chat_id'], msg, parse_mode = ParseMode.HTML)
+    await context.bot.send_message(params['TLG']['TLG_MOD']['chat_id'], msg, parse_mode = ParseMode.HTML)
 
 
 @logger.catch
