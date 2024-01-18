@@ -83,7 +83,7 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
     member_name = update.chat_member.new_chat_member.user.mention_html()
 
     if not was_member and is_member:
-        msg = f"К нам присоединяется {member_name}. Пожалуйста, изучите наши правила: \nСсылка в ВК: https://vk.com/topic-792329_30971399\nСсылка в Телеграм: https://t.me/chnp_chat/30443.\nДобро пожаловать!" 
+        msg = f"К нам присоединяется {member_name}.\nПожалуйста, ознакомьтесь с нашими правилами:\nСсылка в ВК: https://vk.com/topic-792329_30971399\nСсылка в Телеграм: https://t.me/chnp_chat/30443.\nДобро пожаловать!" 
     elif was_member and not is_member:
         if "338817709" in cause_name or "5082983547" in cause_name:
             msg = f"Администратор {cause_name} вышвыривает {member_name}. Земля ему стекловатой."
@@ -94,12 +94,13 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 @logger.catch
-async def check_text(check_text_result, chat_id, message_id, context: ContextTypes.DEFAULT_TYPE):
-    logger.info(f"Message to remove from {first_name}(@{username}): '{text.replace('.', '[.]')}'")
-    reason = check_text_result['case']
+async def notify_and_remove(check_text_result, chat_id, message_id, context: ContextTypes.DEFAULT_TYPE):
+    if check_text_result['result'] == 1:
+        logger.info(f"Message to remove from {first_name}(@{username}): '{text.replace('.', '[.]')}'")
+        reason = check_text_result['case']
 
-    await context.bot.delete_message(chat_id, message_id)
-    await context.bot.send_message(params['TLG']['TLG_MOD']['chat_id'], f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
+        await context.bot.delete_message(chat_id, message_id)
+        await context.bot.send_message(params['TLG']['TLG_MOD']['chat_id'], f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
 
 
 @logger.catch
@@ -135,14 +136,13 @@ async def moderate_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             check_url_result = filter.check_for_links(url)
     
         logger.debug(f"# Filter result: {check_url_result}")
-        if check_url_result['result'] != 0:
+        if check_url_result['result'] == 1:
             logger.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
             await context.bot.delete_message(chat_id, message_id)
             await context.bot.send_message(
                 params['TLG']['TLG_MOD']['chat_id'], 
                 f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: подозрительная ссылка."
                 )
-
 
     try:
         text = res[message_key]['text']
@@ -163,14 +163,12 @@ async def moderate_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if text != "":
         check_text_result = filter.check_text(text, username)
-        logger.debug(f"# Filter result: {check_text_result}")
-        if check_text_result['result'] != 0:
-            await check_text(check_text_result, chat_id, message_id, context)
     if caption != "":
         check_text_result = filter.check_text(caption, username)
-        logger.debug(f"# Filter result: {check_text_result}")
-        if check_text_result['result'] != 0:
-            await check_text(check_text_result, chat_id, message_id, context)
+
+    logger.debug(f"# Filter result: {check_text_result}")
+    if check_text_result:
+        await notify_and_remove(check_text_result, chat_id, message_id, context)
 
 
 @logger.catch
