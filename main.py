@@ -1,27 +1,4 @@
 # Reviewed: January 17, 2024
-# ToDo:
-# - verify params from file;
-# - process different attachments types - in progress. Repost and link are done.
-# - Telegram interactivity:
-#   - make button in Telegram to download bot logs. Button - done. Callback - no.
-# - Repost processing:
-#   - send to Tlg defanged repost text/link, and From section information
-# - Important improvements:
-#   - add chat ID of new message to log
-#   - send to Telegram only Warnings and higher. Replace levels of according alerts
-#   - change suspicious words check procedure, too many false cases (send warning to Tlg?)
-# - Possible improvements:
-#   - add flag to log for new message if there was attachment
-#   - autorestart bot with params.json changes
-#   - make tests about user kick (1. Message about kick - done; 2. Can kicked user return? - Yes, by admin invitation)
-#   - ban for links, for example, and not ban for curses
-#   - Create database for bad users
-#     - implement limit to removed messages to get banned
-#     - implement Telegram buttons to work with DB
-#   - change logging to JSON
-#   - all bots in one chat
-#   - try to use regexes for different susp/curse words
-#   - maybe is it worth to make all bot async
 
 
 from loguru import logger

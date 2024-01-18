@@ -1,6 +1,4 @@
-# Reviewed: January, 17
-# ToDo:
-#   - comment all
+# Reviewed: January 17, 2024
 
 
 import requests

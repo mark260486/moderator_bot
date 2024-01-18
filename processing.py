@@ -1,7 +1,4 @@
-# Reviewed: January, 17
-# ToDo:
-#   - make processing for telegram messages
-#   - comment all
+# Reviewed: January 17, 2024
 
 
 from loguru import logger
