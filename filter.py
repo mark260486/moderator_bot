@@ -1,6 +1,4 @@
-# Reviewed: December, 20
-# ToDo:
-#   - comment all
+# Reviewed: January 19, 2024
 
 
 import re
@@ -22,6 +20,11 @@ class filter:
             self.logger = logger
         else:
             self.logger = filter_logger
+        self.reset_results()
+        
+
+    @logger.catch
+    def reset_results(self):
         # Result = 0 - false
         # Result = 1 - true
         # Result = 2 - suspicious
@@ -53,6 +56,7 @@ class filter:
     # Check of attachments for links and bad things in repost/reply
     @logger.catch
     def check_attachments(self, attachments, username):
+        self.reset_results()
         for attachment in attachments:
             self.logger.debug(f"Checking attachment of type {attachment['type']}")
             # Links
@@ -78,6 +82,7 @@ class filter:
 
     @logger.catch
     def check_text(self, text_to_check, username):
+        self.reset_results()
         # Prepare text for further checks
         # Replace ё with e and remove new lines
         text_to_check.replace('ё', 'е')
@@ -132,6 +137,7 @@ class filter:
 
     @logger.catch
     def check_for_english(self, text_to_check):
+        self.reset_results()
         self.logger.debug(f"# Checking text for english: {text_to_check}")
         text_check = re.findall("[A-Za-z0-9].+", text_to_check)
         if text_check:
@@ -141,6 +147,7 @@ class filter:
 
     @logger.catch
     def check_for_suspicious_words(self, text_to_check):
+        self.reset_results()
         self.logger.debug(f"# Checking text for suspicious words: {text_to_check}")
         # If we have more than X words - kill it
         max_points = self.params['word_db']['blacklist']['suspicious_points_limit']
@@ -175,6 +182,7 @@ class filter:
 
     @logger.catch
     def check_for_links(self, text_to_check):
+        self.reset_results()
         self.logger.debug(f"# Checking text for links: {text_to_check}")
         for item in self.params['word_db']['blacklist']['spam_list']:
             if item in text_to_check.lower().replace(" ", ""):
@@ -190,6 +198,7 @@ class filter:
 
     @logger.catch
     def check_for_curses(self, text_to_check):
+        self.reset_results()
         self.logger.debug(f"# Checking text for curses: {text_to_check}")
         text_to_check.replace('ё', 'е')
         text_to_check.replace('\n', ' ')
@@ -217,6 +226,7 @@ class filter:
 
     @logger.catch
     def check_for_whitelist(self, text_to_check):
+        self.reset_results()
         self.logger.debug(f"# Checking text for whitelist: {text_to_check}")
         for item in self.params['word_db']['whitelist']:
             pattern = r'(\b\S*%s\S*\b)' % item
