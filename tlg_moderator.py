@@ -1,4 +1,4 @@
-# Reviewed: January 18, 2024
+# Reviewed: January 23, 2024
 
 from telegram import (Update, ChatMember, ChatMemberUpdated)
 from telegram.ext import (Updater, CallbackContext, ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
@@ -82,6 +82,7 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
     cause_name = update.chat_member.from_user.mention_html()
     member_name = update.chat_member.new_chat_member.user.mention_html()
 
+    msg = ""
     if not was_member and is_member:
         msg = f"К нам присоединяется {member_name}.\nПожалуйста, ознакомьтесь с нашими правилами:\nСсылка в ВК: https://vk.com/topic-792329_30971399\nСсылка в Телеграм: https://t.me/chnp_chat/30443.\nДобро пожаловать!" 
     elif was_member and not is_member:
@@ -89,7 +90,7 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
             msg = f"Администратор {cause_name} вышвыривает {member_name}. Земля ему стекловатой."
         else:
             msg = f"{member_name} покинул канал. Удачи!"
-    logger.debug(f"Cause name: {cause_name}, member name: {member_name}")
+    logger.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
     await context.bot.send_message(params['TLG']['TLG_MOD']['chat_id'], msg, parse_mode = ParseMode.HTML)
 
 

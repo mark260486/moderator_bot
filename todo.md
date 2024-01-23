@@ -17,6 +17,8 @@
 - Verify params from file;
 - Change suspicious words check procedure, too many false cases (send warning to Tlg?);
 - Make processing for telegram messages;
+- Refactor main cycle for VK moderator;
+- Refactor VK errors processing, especially for VK failure;
 #### Possible improvements
 * Autorestart bots with params.json changes;
     + This should follow after params verifying;

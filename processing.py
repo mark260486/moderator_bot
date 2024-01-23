@@ -1,4 +1,4 @@
-# Reviewed: January 17, 2024
+# Reviewed: January 23, 2024
 
 
 from loguru import logger
@@ -110,7 +110,7 @@ class processing:
         main_log.debug(f"# Filter result: {filter_result}")
         if filter_result['result'] == 1:
             main_log.info(f"# Filter result: {filter_result}")
-            main_log.info(f"# Comment to remove from {username}\n'{message}'")
+            main_log.info(f"# Comment to remove from {username}: '{message}'")
             if cases_log:
                 cases_log.info(f"# Filter result: {filter_result}")
                 cases_log.info(f"# Comment to remove from {username}: '{message}'")
