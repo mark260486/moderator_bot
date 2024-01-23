@@ -173,7 +173,7 @@ class auxiliary:
                 # In case of warning we count to ERRORS_LIMIT and then stop
                 longpoll['errors_counter'] += 1
                 main_log.debug(process_result['text'])
-                main_log.info(f"# Errors counter: {longpoll['errors_counter']}")
+                main_log.debug(f"# Errors counter: {longpoll['errors_counter']}")
                 if longpoll['errors_counter'] == errors_limit:
                     msg = "# Errors limit is over. Shut down."
                     logger.error(msg)

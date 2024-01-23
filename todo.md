@@ -27,6 +27,7 @@
 - Try to use regexes for different susp/curse words;
 - Add flag to log for new message if there was attachment;
 #### Tests and researches
+- Add comment remove function to VK API;
 * Make tests about user kick;
     + Message about kick - need to fix;
     + Can kicked user return? - Yes, by admin invitation;
