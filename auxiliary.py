@@ -1,4 +1,4 @@
-# Reviewed: January 23, 2024
+# Reviewed: January 24, 2024
 
 
 import requests
@@ -90,14 +90,6 @@ class auxiliary:
     def read_params(self):
         with open(PARAMS_FILE, "r", encoding="UTF-8") as params_file:
             return json.loads(params_file.read())
-
-
-    # Filter for differentiation of logs
-    @logger.catch
-    def make_filter(self, name):
-        def filter(record):
-            return record["extra"].get("name") == name
-        return filter
 
 
     # Replacing Latin/Number/Other characters with Cyrillic
