@@ -1,19 +1,33 @@
-# Reviewed: January 19, 2024
+# Reviewed: January 24, 2024
 
 
 import re
 from loguru import logger
-
-
-DEBUG_ENABLED = False
+import auxiliary
 
 
 class filter:
-    def __init__(self, aux, filter_logger = None) -> None:
+    def __init__(self, aux: auxiliary, filter_logger: logger = None, debug_enabled: bool = False) -> None:
+        """
+        Filter class init
+
+        :type aux: ``auxiliary``
+        :param aux: Auxiliary class instance.
+        
+        :type filter_logger: ``logger``
+        :param filter_logger: Logger instance.
+
+        :type debug_enabled: ``bool``
+        :param debug_enabled: Boolean to switch on and off debugging. False by default.
+
+        :return: Returns the class instance.
+        """
+
         self.params = aux.read_params()
         self.aux = aux
         if filter_logger == None:
-            if DEBUG_ENABLED:
+            logger.remove()
+            if debug_enabled:
                 logger.add(self.params['filter_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
             else:
                 logger.add(self.params['filter_log'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -25,6 +39,9 @@ class filter:
 
     @logger.catch
     def reset_results(self):
+        """
+        Filter class method to reset filter results before every check.
+        """
         # Result = 0 - false
         # Result = 1 - true
         # Result = 2 - suspicious
@@ -37,7 +54,23 @@ class filter:
 
     # Message filter. Returns true if message contains anything illegal
     @logger.catch
-    def filter_response(self, text, username, attachments):
+    def filter_response(self, text: str, username: str, attachments: str) -> dict:
+        """
+        Filter class method to filter provided text and/or attachments.
+
+        :type text: ``str``
+        :param text: Text to check.
+
+        :type username: ``str``
+        :param username: Username to check.
+
+        :type attachments: ``str``
+        :param attachments: Attachments to check.
+
+        :return: Returns the result as dictionary.
+        :rtype: ``dict``
+        """
+        
         self.logger.debug("# Filtering response")
         # Attachments checks
         check_attachments_result = self.check_attachments(attachments, username)
@@ -55,7 +88,20 @@ class filter:
 
     # Check of attachments for links and bad things in repost/reply
     @logger.catch
-    def check_attachments(self, attachments, username):
+    def check_attachments(self, attachments: str, username: str) -> dict:
+        """
+        Filter class method to check attachments.
+
+        :type attachments: ``str``
+        :param attachments: Attachments to check.
+
+        :type username: ``str``
+        :param username: Username to check.
+
+        :return: Returns the result as dictionary.
+        :rtype: ``dict``
+        """
+        
         self.reset_results()
         for attachment in attachments:
             self.logger.debug(f"Checking attachment of type {attachment['type']}")

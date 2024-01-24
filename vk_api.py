@@ -1,13 +1,28 @@
-# Reviewed: November 29, 2023
+# Reviewed: January 24, 2024
+
 
 import random
 from loguru import logger
+import auxiliary
 
-DEBUG_ENABLED = False
 
 class vk_api:
+    def __init__(self, aux: auxiliary, vk_logger: logger, debug_enabled: bool = False) -> None:
+        """
+        VK API class init
 
-    def __init__(self, aux, vk_logger):
+        :type aux: ``auxiliary``
+        :param aux: Auxiliary class instance.
+        
+        :type vk_logger: ``logger``
+        :param vk_logger: Logger instance.
+
+        :type debug_enabled: ``bool``
+        :param debug_enabled: Boolean to switch on and off debugging. False by default.
+
+        :return: Returns the class instance.
+        """
+
         self.params = aux.read_params()
         self.use_ssl = self.params['VK']['use_ssl']
         self.lp_key = ""
@@ -15,12 +30,14 @@ class vk_api:
         self.lp_server = ""
         self.lp_wait = self.params['VK']['VK_LP']['wait']
         self.aux = aux
+        self.vk_api_url = self.params['VK']['VK_API']['url']
         self.result = {
             'text': '',
             'error': 0
         }
         if vk_logger == None:
-            if DEBUG_ENABLED:
+            logger.remove()
+            if debug_enabled:
                 logger.add(self.params['VK']['log_path'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
             else:
                 logger.add(self.params['VK']['log_path'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -29,7 +46,12 @@ class vk_api:
             self.logger = vk_logger
 
 
-    def reset_result(self):
+    @logger.catch
+    def reset_result(self) -> None:
+        """
+        VK API class method to reset reques results.
+        """
+
         self.result = {
             'text': '',
             'error': 0
@@ -37,7 +59,15 @@ class vk_api:
 
 
     # GET request to VK LongPoll API to listen for messages
-    def listen_longpoll(self):
+    @logger.catch
+    def listen_longpoll(self) -> dict:
+        """
+        VK API class method to listen VK LongPoll response.
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
         # Form request params
         payload = {
             'act': 'a_check',
@@ -50,11 +80,22 @@ class vk_api:
         return response
 
 
-    # Get user name from message
-    def get_user(self, user_id):
+    @logger.catch
+    def get_user(self, user_id: int) -> dict:
+        """
+        VK API class method to get user's data like name.
+        https://dev.vk.com/ru/method/users.get
+
+        :type user_id: ``int``
+        :param user_id: User ID.
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
         self.reset_result()
         vk_method = "users.get"
-        vk_api_url = f"{self.params['VK']['VK_API']['url']}{vk_method}"
+        vk_api_url = f"{self.vk_api_url}{vk_method}"
         payload = {
             'user_ids': user_id,
             'v': self.params['VK']['VK_API']['version']
@@ -76,10 +117,28 @@ class vk_api:
         return self.result
 
 
-    def send_message(self, text, group_id, peer_id):
+    @logger.catch
+    def send_message(self, text: str, group_id: int, peer_id: int) -> dict:
+        """
+        VK API class method to send message.
+        https://dev.vk.com/ru/method/messages.send
+
+        :type text: ``str``
+        :param text: Text to send.
+
+        :type group_id: ``int``
+        :param group_id: Public ID to message as administrator.
+
+        :type peer_id: ``int``
+        :param peer_id: Chat ID.
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
         self.reset_result()
         vk_method = "messages.send"
-        vk_api_url = f"{self.params['VK']['VK_API']['url']}{vk_method}"
+        vk_api_url = f"{self.vk_api_url}{vk_method}"
         payload = {
             'group_id': group_id,
             'peer_id': peer_id,
@@ -102,10 +161,28 @@ class vk_api:
         return self.result
 
 
-    def delete_message(self, group_id, cm_id, peer_id):
+    @logger.catch
+    def delete_message(self, group_id: int, cm_id: int, peer_id: int) -> dict:
+        """
+        VK API class method to delete message.
+        https://dev.vk.com/ru/method/messages.delete
+
+        :type group_id: ``int``
+        :param group_id: Public ID.
+
+        :type cm_id: ``int``
+        :param cm_id: Message ID.
+
+        :type peer_id: ``int``
+        :param peer_id: Chat ID.
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
         self.reset_result()
         vk_method = "messages.delete"
-        vk_api_url = f"{self.params['VK']['VK_API']['url']}{vk_method}"
+        vk_api_url = f"{self.vk_api_url}{vk_method}"
         payload = {
             'group_id': group_id,
             'cmids': cm_id,
@@ -129,11 +206,19 @@ class vk_api:
 
 
 
-    # Get Longpoll API server parameters as link, key and TS
-    def get_lp_server_params(self):
+    @logger.catch
+    def get_lp_server_params(self) -> dict:
+        """
+        VK API class method to get LongPoll server parameters.
+        https://dev.vk.com/ru/method/groups.getLongPollServer
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
         self.reset_result()
         vk_method = "groups.getLongPollServer"
-        vk_api_url = f"{self.params['VK']['VK_API']['url']}{vk_method}"
+        vk_api_url = f"{self.vk_api_url}{vk_method}"
         vk_group_id = self.params['VK']['VK_API']['group_id']
         vk_api_version = self.params['VK']['VK_API']['version']
 

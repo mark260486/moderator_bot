@@ -7,15 +7,28 @@ from loguru import logger
 import time
 
 
-DEBUG_ENABLED = False
+USE_SSL = True
 PARAMS_FILE = "params.json"
 
 
 class auxiliary:
-    def __init__(self, aux_logger = None) -> None:
+    def __init__(self, aux_logger: logger = None, debug_enabled: bool = False) -> None:
+        """
+        Auxiliary class init
+
+        :type aux_logger: ``logger``
+        :param aux_logger: Logger instance.
+
+        :type debug_enabled: ``bool``
+        :param debug_enabled: Boolean to switch on and off debugging. False by default.
+
+        :return: Returns the class instance.
+        """
+
         self.params = self.read_params()
         if aux_logger == None:
-            if DEBUG_ENABLED:
+            logger.remove()
+            if debug_enabled:
                 logger.add(self.params['aux_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
             else:
                 logger.add(self.params['aux_log'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -33,7 +46,8 @@ class auxiliary:
 
     # # # # # # # # Auxiliary section start # # # # # # # # # #
     @logger.catch
-    def do_request(self, method, url, headers = None, params = None, data = None, auth = None, use_ssl = True):
+    def do_request(self, method: str, url: str, headers: dict = None, params: dict = None,
+                   data: dict = None, auth: str = None, use_ssl: bool = USE_SSL) -> dict:
         """
         A wrapper for requests lib to send our requests and handle requests and responses better.
 
@@ -87,14 +101,34 @@ class auxiliary:
 
     # Read parameters from file
     @logger.catch
-    def read_params(self):
+    def read_params(self) -> dict:
+        """
+        Auxiliary class method to read parameters file.
+
+        :return: Returns the dict of params.
+        :rtype: ``dict``
+        """
+
         with open(PARAMS_FILE, "r", encoding="UTF-8") as params_file:
             return json.loads(params_file.read())
 
 
     # Replacing Latin/Number/Other characters with Cyrillic
     @logger.catch
-    def lat_to_cyr(self, text, dictionary):
+    def lat_to_cyr(self, text: str, dictionary: dict) -> str:
+        """
+        Auxiliary class method to convert inconvinient characters to Cyrillic.
+
+        :type text: ``str``
+        :param text: Text to convert.
+
+        :type dictionary: ``dict``
+        :param dictionary: Dictionary with matching characters to each other.
+
+        :return: Returns the converted text.
+        :rtype: ``str``
+        """
+
         self.logger.debug(f"# Processing Latyn to Cyrillic conversion for: {text}")
         text = text.lower()
         for key in dictionary:
@@ -108,7 +142,20 @@ class auxiliary:
 
     # # # # # # # # Processing section start # # # # # # # # # #
     @logger.catch
-    def process_longpoll_errors(self, vk_api, result):
+    def process_longpoll_errors(self, vk_api: vk_api, result: dict) -> dict:
+        """
+        Auxiliary class method to process VK LongPoll server response.
+
+        :type vk_api: ``vk_api``
+        :param vk_api: VK API class instance.
+
+        :type result: ``dict``
+        :param result: Dictionary with VK LongPoll request results.
+
+        :return: Returns the result of processing.
+        :rtype: ``dict``
+        """
+
         self.logger.debug(f"# Processing Longpoll error: {result}")
         if result['failed'] == 1:
             self.result['text'] = f"[VK WARNING] Event history is deprecated or lost. New TS provided: {result['ts']}"
@@ -130,7 +177,20 @@ class auxiliary:
 
     # Listen to VK Longpoll server and manage results
     @logger.catch
-    def listen_longpoll(self, vk_api, main_log):
+    def listen_longpoll(self, vk_api: vk_api, main_log: logger) -> dict:
+        """
+        Auxiliary class method to listen VK LongPoll server response.
+
+        :type vk_api: ``vk_api``
+        :param vk_api: VK API class instance.
+
+        :type main_log: ``logger``
+        :param main_log: Logger instance.
+
+        :return: Returns the result of VK LongPoll request.
+        :rtype: ``dict``
+        """
+
         # # Errors counter for warnings.
         # +1 if warning was received (e.g. API key deprecated)
         # reset if next request is OK

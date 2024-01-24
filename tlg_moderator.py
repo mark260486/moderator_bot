@@ -1,7 +1,7 @@
-# Reviewed: January 23, 2024
+# Reviewed: January 24, 2024
 
 from telegram import (Update, ChatMember, ChatMemberUpdated)
-from telegram.ext import (Updater, CallbackContext, ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
+from telegram.ext import (ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
 from telegram.constants import ParseMode
 from typing import Optional, Tuple
 from loguru import logger
@@ -21,18 +21,18 @@ username = ""
 urls = []
 
 
-aux = auxiliary.auxiliary()
-filter = filter.filter(aux)
+aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED)
+filter = filter.filter(aux, debug_enabled = DEBUG_ENABLED)
 params = aux.read_params()
-log_file = params['TLG']['log_path']
+main_log_file = params['TLG']['log_path']
 cases_log_file = params['TLG']['cases_log_path']
 
 # Logging params
 if DEBUG_ENABLED:
-    logger.add(log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
+    logger.add(main_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
     logger.add(cases_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 else:
-    logger.add(log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
+    logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
     logger.add(cases_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 
 # Telegram messages logging

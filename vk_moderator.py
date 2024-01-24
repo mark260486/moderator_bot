@@ -13,18 +13,18 @@ DEBUG_ENABLED = False
 
 
 @logger.catch
-def main():
-    aux = auxiliary.auxiliary()
+def main() -> None:
+    aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED)
     params = aux.read_params()
-    log_file = params['VK']['log_path']
+    main_log_file = params['VK']['log_path']
     cases_log_file = params['VK']['cases_log_path']
 
     # Logging params
     if DEBUG_ENABLED:
-        logger.add(log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
+        logger.add(main_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
                    filter = lambda record: record["extra"].get("name") == "main_log")
     else:
-        logger.add(log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
+        logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
                    filter = lambda record: record["extra"].get("name") == "main_log")
     logger.add(cases_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
                     filter = lambda record: record["extra"].get("name") == "cases_log")
@@ -46,7 +46,7 @@ def main():
     main_log.info(f"# VK Moderator bot is (re)starting...")
 
     # Create VK API object
-    vk = vk_api.vk_api(aux, logger)
+    vk = vk_api.vk_api(aux, vk_logger = main_log)
 
     # Get longpoll server parameters
     main_log.debug("# Get LongPoll server parameters to listen")
@@ -56,7 +56,7 @@ def main():
         while True:
             main_log.debug("# Listening to LongPoll API...")
             # Listening
-            longpoll_result = aux.listen_longpoll(vk, main_log)
+            longpoll_result = aux.listen_longpoll(vk_api = vk, main_log = main_log)
             if longpoll_result['error'] == 1:
                 main_log.info("# Bot has stopped")
                 # In case of error - break glass
@@ -65,7 +65,12 @@ def main():
                 response_type = longpoll_result['response_type']
                 # Response type, like 'message' or 'comment' will call according function from Filter
                 function_to_call = getattr(proc, response_type)
-                function_to_call(longpoll_result['response'], vk, main_log, cases_log)
+                function_to_call(
+                    response = longpoll_result['response'],
+                    vk_api = vk, 
+                    main_log = main_log,
+                    cases_log = cases_log
+                    )
     else:
         logger.error(f"# Get Longpoll server parameters error. {result}")
 

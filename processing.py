@@ -3,17 +3,32 @@
 
 from loguru import logger
 import filter
-
-
-DEBUG_ENABLED = False
+import auxiliary
+import vk_api
 
 
 class processing:
-    def __init__(self, aux, processing_logger = None) -> None:
+    def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False) -> None:
+        """
+        Processing class init
+
+        :type aux: ``auxiliary``
+        :param aux: Auxiliary class instance.
+        
+        :type processing_logger: ``logger``
+        :param processing_logger: Logger instance.
+
+        :type debug_enabled: ``bool``
+        :param debug_enabled: Boolean to switch on and off debugging. False by default.
+
+        :return: Returns the class instance.
+        """
+
         self.params = aux.read_params()
         self.filter = filter.filter(aux, processing_logger)
         if processing_logger == None:
-            if DEBUG_ENABLED:
+            logger.remove()
+            if debug_enabled:
                 logger.add(self.params['processing_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
             else:
                 logger.add(self.params['processing_log'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -31,7 +46,18 @@ class processing:
 
 
     @logger.catch
-    def replacements(self, text):
+    def replacements(self, text: str) -> str:
+        """
+        Processing class method to replace unwanted symbols in provided text.
+        Replaced symbols: ё -> е, \n -> ' '
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the text with replacements.
+        :rtype: ``str``
+        """
+        
         # Neccessary replaces in text for further processing
         # replaced = text.replace('.', '[.]')
         replaced = text.replace('\n', ' ')
@@ -40,7 +66,23 @@ class processing:
 
 
     @logger.catch
-    def message(self, response, vk_api, main_log, cases_log = None):
+    def message(self, response: dict, vk_api: vk_api, main_log: logger, cases_log: logger = None) -> None:
+        """
+        Processing class method to process new VK message.
+
+        :type response: ``dict``
+        :param response: VK LongPoll response.
+
+        :type response: ``vk_api``
+        :param response: VK API Class instance.
+
+        :type main_log: ``logger``
+        :param main_log: Logger instance.
+
+        :type cases_log: ``logger``
+        :param cases_log: Logger instance.
+        """
+        
         main_log.debug("# Processing message")
         message = self.replacements(response['updates'][0]['object']['message']['text'])
         attachments = response['updates'][0]['object']['message']['attachments']
@@ -94,7 +136,23 @@ class processing:
 
 
     @logger.catch
-    def comment(self, response, vk_api, main_log, cases_log = None):
+    def comment(self, response: dict, vk_api: vk_api, main_log: logger, cases_log: logger = None) -> None:
+        """
+        Processing class method to process new VK commentary.
+
+        :type response: ``dict``
+        :param response: VK LongPoll response.
+
+        :type response: ``vk_api``
+        :param response: VK API Class instance.
+
+        :type main_log: ``logger``
+        :param main_log: Logger instance.
+
+        :type cases_log: ``logger``
+        :param cases_log: Logger instance.
+        """
+        
         main_log.debug("# Processing comment")
         message = self.replacements(response['updates'][0]['object']['text'])
         user_id = response['updates'][0]['object']['from_id']
