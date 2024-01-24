@@ -1,4 +1,4 @@
-# Reviewed: January 23, 2024
+# Reviewed: January 24, 2024
 
 
 from loguru import logger
@@ -33,8 +33,8 @@ class processing:
     @logger.catch
     def replacements(self, text):
         # Neccessary replaces in text for further processing
-        replaced = text.replace('.', '[.]')
-        replaced = replaced.replace('\n', ' ')
+        # replaced = text.replace('.', '[.]')
+        replaced = text.replace('\n', ' ')
         replaced = replaced.replace('ё', 'е')
         return replaced
 
