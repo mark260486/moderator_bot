@@ -1,4 +1,4 @@
-# Reviewed: January 23, 2024
+# Reviewed: January 24, 2024
 
 
 from loguru import logger
@@ -21,10 +21,13 @@ def main():
 
     # Logging params
     if DEBUG_ENABLED:
-        logger.add(log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB", filter = aux.make_filter("main_log"))
+        logger.add(log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
+                   filter = lambda record: record["extra"].get("name") == "main_log")
     else:
-        logger.add(log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB", filter = aux.make_filter("main_log"))
-    logger.add(cases_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB", filter = aux.make_filter("cases_log"))
+        logger.add(log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
+                   filter = lambda record: record["extra"].get("name") == "main_log")
+    logger.add(cases_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
+                    filter = lambda record: record["extra"].get("name") == "cases_log")
 
     main_log = logger.bind(name = "main_log")
     cases_log = logger.bind(name = "cases_log")
