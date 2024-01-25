@@ -5,7 +5,6 @@
 - Make requirements.txt;
 - Make project description;
 - Comment all;
-- Make tooltips for functions;
 #### Telegram interactivity
 * Make menu button in Telegram to download bot logs;
     + Button - done;
@@ -24,11 +23,10 @@
     + This should follow after params verifying;
 - Add logging with JSON;
 - All bots in one chat;
-- Try to use regexes for different susp/curse words;
 - Add flag to log for new message if there was attachment;
-- Pass DEBUG_ENABLED parameter to other classes;
 #### Tests and researches
 - Add comment remove function to VK API;
+- Try to use regexes for different susp/curse words;
 * Make tests about user kick;
     + Message about kick - need to fix;
     + Can kicked user return? - Yes, by admin invitation;
