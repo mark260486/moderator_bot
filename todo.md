@@ -5,6 +5,8 @@
 - Make requirements.txt;
 - Make project description;
 - Comment all;
+#### Bugs to fix
+* Duplicating notification messages in Telegram;
 #### Telegram interactivity
 * Make menu button in Telegram to download bot logs;
     + Button - done;
