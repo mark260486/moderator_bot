@@ -7,6 +7,7 @@
 - Comment all;
 #### Bugs to fix
 * Duplicating notification messages in Telegram;
+* Incorrect Telegram username in ban message for 'Removed account';
 #### Telegram interactivity
 * Make menu button in Telegram to download bot logs;
     + Button - done;
