@@ -28,6 +28,7 @@
 - All bots in one chat;
 - Add flag to log for new message if there was attachment;
 #### Tests and researches
+- Try to replace my own VK API module with https://vk-api.readthedocs.io/en/latest/index.html Pypi module;
 - Add comment remove function to VK API;
 - Try to use regexes for different susp/curse words;
 * Make tests about user kick;
