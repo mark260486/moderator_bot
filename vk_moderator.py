@@ -1,4 +1,4 @@
-# Reviewed: January 24, 2024
+# Reviewed: February 06, 2024
 
 
 from loguru import logger
@@ -38,7 +38,7 @@ def main() -> None:
         'chat_id': params['TLG']['VK_MOD']['chat_id']
     }
     tg_handler = NotificationHandler("telegram", defaults = tg_params)
-    logger.add(tg_handler, format = "{message}", level = "INFO")
+    logger.add(tg_handler, format = "{message}", level = "INFO", filter = lambda record: record["extra"].get("name") == "main_log")
     aux = auxiliary.auxiliary(main_log)
     proc = processing.processing(aux, main_log)
 
