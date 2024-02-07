@@ -1,4 +1,4 @@
-# Reviewed: January 24, 2024
+# Reviewed: February 06, 2024
 
 from telegram import (Update, ChatMember, ChatMemberUpdated)
 from telegram.ext import (ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
@@ -162,6 +162,7 @@ async def moderate_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     message_id = res[message_key]['message_id']
     logger.debug(f"# Text: {text}, Caption: {caption}, Name: {first_name}, Login: {username}, URLS: {urls}, Chat ID: {chat_id}, Message ID: {message_id}")
 
+    check_text_result = ""
     if text != "":
         check_text_result = filter.check_text(text, username)
     if caption != "":
