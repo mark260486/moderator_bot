@@ -1,4 +1,4 @@
-# Reviewed: February 06, 2024
+# Reviewed: February 11, 2024
 
 
 from loguru import logger
@@ -19,7 +19,17 @@ def main() -> None:
     main_log_file = params['VK']['log_path']
     cases_log_file = params['VK']['cases_log_path']
 
+    # Telegram messages logging
+    tg_params = {
+        'token': params['TLG']['VK_MOD']['key'],
+        'chat_id': params['TLG']['VK_MOD']['chat_id']
+    }
+    tg_handler = NotificationHandler("telegram", defaults = tg_params)
+    logger.add(tg_handler, format = "{message}", level = "INFO", filter = lambda record: record["extra"].get("name") == "main_log")
+
     # Logging params
+    main_log = logger.bind(name = "main_log")
+    cases_log = logger.bind(name = "cases_log")
     if DEBUG_ENABLED:
         logger.add(main_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
                    filter = lambda record: record["extra"].get("name") == "main_log")
@@ -29,16 +39,6 @@ def main() -> None:
     logger.add(cases_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB",
                     filter = lambda record: record["extra"].get("name") == "cases_log")
 
-    main_log = logger.bind(name = "main_log")
-    cases_log = logger.bind(name = "cases_log")
-
-    # Telegram messages logging
-    tg_params = {
-        'token': params['TLG']['VK_MOD']['key'],
-        'chat_id': params['TLG']['VK_MOD']['chat_id']
-    }
-    tg_handler = NotificationHandler("telegram", defaults = tg_params)
-    logger.add(tg_handler, format = "{message}", level = "INFO", filter = lambda record: record["extra"].get("name") == "main_log")
     aux = auxiliary.auxiliary(main_log)
     proc = processing.processing(aux, main_log)
 

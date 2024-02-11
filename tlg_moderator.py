@@ -1,4 +1,4 @@
-# Reviewed: February 06, 2024
+# Reviewed: February 11, 2024
 
 from telegram import (Update, ChatMember, ChatMemberUpdated)
 from telegram.ext import (ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
@@ -88,6 +88,8 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif was_member and not is_member:
         if "338817709" in cause_name or "5082983547" in cause_name:
             msg = f"Администратор {cause_name} вышвыривает {member_name}. Земля ему стекловатой."
+            if "><" in member_name:
+                msg = f"Администратор {cause_name} убирает из подписчиков 'Удалённый аккаунт'."
         else:
             msg = f"{member_name} покинул канал. Удачи!"
     logger.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")

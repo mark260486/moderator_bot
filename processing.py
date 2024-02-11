@@ -1,4 +1,4 @@
-# Reviewed: January 24, 2024
+# Reviewed: February 11, 2024
 
 
 from loguru import logger
@@ -14,7 +14,7 @@ class processing:
 
         :type aux: ``auxiliary``
         :param aux: Auxiliary class instance.
-        
+
         :type processing_logger: ``logger``
         :param processing_logger: Logger instance.
 
@@ -57,7 +57,7 @@ class processing:
         :return: Returns the text with replacements.
         :rtype: ``str``
         """
-        
+
         # Neccessary replaces in text for further processing
         # replaced = text.replace('.', '[.]')
         replaced = text.replace('\n', ' ')
@@ -82,7 +82,7 @@ class processing:
         :type cases_log: ``logger``
         :param cases_log: Logger instance.
         """
-        
+
         main_log.debug("# Processing message")
         message = self.replacements(response['updates'][0]['object']['message']['text'])
         attachments = response['updates'][0]['object']['message']['attachments']
@@ -98,11 +98,10 @@ class processing:
         main_log.debug(f"# New message: {message}; New TS: {vk_api.lp_ts}; User: {username}")
         filter_result = self.filter.filter_response(message, username, attachments)
         main_log.debug(f"# Filter result: {filter_result}")
-        if filter_result == None: 
+        if filter_result == None:
             return
         # If filter returns 1 - we catch something
         if filter_result['result'] == 1:
-            main_log.info(f"# Filter result: {filter_result}")
             main_log.info(f"# Message to remove from {username}: '{message}'")
             if cases_log:
                 cases_log.info(f"# Message to remove from {username}: '{message}'")
@@ -152,7 +151,7 @@ class processing:
         :type cases_log: ``logger``
         :param cases_log: Logger instance.
         """
-        
+
         main_log.debug("# Processing comment")
         message = self.replacements(response['updates'][0]['object']['text'])
         user_id = response['updates'][0]['object']['from_id']
@@ -167,7 +166,6 @@ class processing:
         filter_result = self.filter.filter_response(message, username, [])
         main_log.debug(f"# Filter result: {filter_result}")
         if filter_result['result'] == 1:
-            main_log.info(f"# Filter result: {filter_result}")
             main_log.info(f"# Comment to remove from {username}: '{message}'")
             if cases_log:
                 cases_log.info(f"# Filter result: {filter_result}")
