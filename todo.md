@@ -13,6 +13,7 @@
     + Callback - no;
 - Fix callbacks for current menu;
 #### Important improvements
+- Line 108 in vk_api should be fixed;
 - Add chat ID of new message to log and use it for notifications;
 - Send to Telegram only Warnings and higher. Replace levels of according alerts;
 - Verify params from file;
