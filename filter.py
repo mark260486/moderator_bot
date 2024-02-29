@@ -1,4 +1,4 @@
-# Reviewed: January 24, 2024
+# Reviewed: February 14, 2024
 
 
 import re
@@ -74,12 +74,12 @@ class filter:
         self.logger.debug("# Filtering response")
         # Attachments checks
         check_attachments_result = self.check_attachments(attachments, username)
-        if check_attachments_result['result'] == 1:
+        if check_attachments_result['result'] > 0:
             return check_attachments_result
 
         # Text check
         check_text_result = self.check_text(text, username)
-        if check_text_result['result'] == 1:
+        if check_text_result['result'] > 0:
             return check_text_result
 
         self.result['result'] = 0
@@ -171,7 +171,7 @@ class filter:
         # Suspicious words check
         # If we have more than X words - kill it
         suspicious_check_result = self.check_for_suspicious_words(text_to_check)
-        if suspicious_check_result['result'] != 0:
+        if suspicious_check_result['result'] > 0:
             return suspicious_check_result
 
         # If user send a picture and user name is in English - warn me
@@ -185,7 +185,7 @@ class filter:
     def check_for_english(self, text_to_check):
         self.reset_results()
         self.logger.debug(f"# Checking text for english: {text_to_check}")
-        text_check = re.findall("[A-Za-z0-9].+", text_to_check)
+        text_check = re.findall("[A-Za-z].+", text_to_check)
         if text_check:
             return True
         return False
@@ -210,7 +210,7 @@ class filter:
         if len(res) >= max_points:
             msg = f"Suspicious '{res}' was found.\nMore than {max_points} suspicious words were found."
             self.logger.debug(f"# {msg}")
-            self.result['result'] = 1
+            self.result['result'] = 2
             self.result['text'] = msg
             self.result['case'] = "подозрительный набор слов, спам, реклама."
             return self.result
