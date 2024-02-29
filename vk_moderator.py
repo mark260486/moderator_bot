@@ -63,7 +63,7 @@ def main() -> None:
                 break
             if longpoll_result['response_type'] != "":
                 response_type = longpoll_result['response_type']
-                # Response type, like 'message' or 'comment' will call according function from Filter
+                # Response type, like 'message' or 'comment' will call according function from Processing
                 function_to_call = getattr(proc, response_type)
                 function_to_call(
                     response = longpoll_result['response'],
