@@ -106,7 +106,7 @@ class vk_api:
         }
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
         if response['response'] == []:
-            self.result['text'] = "Имя Вашего паблика"
+            self.result['text'] = "Чернобыль и Припять"
             return self.result
         if 'error' in response:
             msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
