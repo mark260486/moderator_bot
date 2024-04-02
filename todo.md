@@ -42,6 +42,7 @@
 - Try to replace my own VK API module with https://vk-api.readthedocs.io/en/latest/index.html Pypi module;
 - Add comment remove function to VK API;
 - Try to use regexes for different susp/curse words;
+- Make different wait periods for different errors at VK API request;
 * Make tests about user kick;
     + Message about kick - need to fix;
     + Can kicked user return? - Yes, by admin invitation;
