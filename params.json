@@ -44,7 +44,7 @@
             "spam_list": [
                 "@all","@online","@все","alfa","bit.do","bit.ly","bitly.com","cashback","clck.ru","click","cutt","decordar.ru","gclnk.com","goo.su",
                 "guest.link","ify.ac","lnnk","ls.gd","nyшkuнc","nyшkuнс","ok.me","page.link","rebrandly","shorturl.cool","shrt-l.ink","t.me","th.link",
-                "tiktok","tinyurl","u.to","vk.cc","vk.me","xxxsports.ru","yurist-forum","пyшкинc","пушкинс","belea.link"
+                "tiktok","tinyurl","u.to","vk.cc","vk.me","xxxsports.ru","yurist-forum","пyшкинc","пушкинс","belea.link","tumblr.com"
             ],
             "curses_list": [
                 "eбaлo","eбaн","eбан","nuдор","nuзд","nидор","nизд","ахуен","ахуеть","бля","вьеб","вьёб","далбаеб","даун","доебал","долбаеб","долбоеб","дроч",
@@ -66,7 +66,7 @@
         },
         "whitelist": [
             "блямб","блях","бляш","влюб","греб","дуб","заглуб","истреб","канальн","колеб","обляп","оглоб","озлоб","оскорб","пособ","потреб",
-            "радиоактив","раздроб","расслаб","саб","углуб","укрыт","виробл","розробл","чмок"
+            "радиоактив","раздроб","расслаб","саб","углуб","укрыт","виробл","розробл","чмок","вопрос"
         ],
     "dict": {
         "а": ["a", "α", "@", "4"],

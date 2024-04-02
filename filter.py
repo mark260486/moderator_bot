@@ -35,7 +35,7 @@ class filter:
         else:
             self.logger = filter_logger
         self.reset_results()
-        
+
 
     @logger.catch
     def reset_results(self):
@@ -74,13 +74,15 @@ class filter:
         self.logger.debug("# Filtering response")
         # Attachments checks
         check_attachments_result = self.check_attachments(attachments, username)
-        if check_attachments_result['result'] > 0:
-            return check_attachments_result
+        if check_attachments_result:
+            if check_attachments_result['result'] > 0:
+                return check_attachments_result
 
         # Text check
         check_text_result = self.check_text(text, username)
-        if check_text_result['result'] > 0:
-            return check_text_result
+        if check_text_result:
+            if check_text_result['result'] > 0:
+                return check_text_result
 
         self.result['result'] = 0
         return self.result
@@ -129,13 +131,6 @@ class filter:
     @logger.catch
     def check_text(self, text_to_check, username):
         self.reset_results()
-        # Prepare text for further checks
-        # Replace ё with e and remove new lines
-        text_to_check.replace('ё', 'е')
-        text_to_check.replace('\n', ' ')
-        # Lower text
-        text_to_check = text_to_check.lower()
-
         self.logger.debug(f"# Checking text: {text_to_check}")
 
         # Spam list check

@@ -1,8 +1,9 @@
-# Reviewed: January 24, 2024
+# Reviewed: April 03, 2024
 
 
 import random
 from loguru import logger
+from datetime import datetime, timedelta
 import auxiliary
 
 
@@ -13,7 +14,7 @@ class vk_api:
 
         :type aux: ``auxiliary``
         :param aux: Auxiliary class instance.
-        
+
         :type vk_logger: ``logger``
         :param vk_logger: Logger instance.
 
@@ -105,7 +106,7 @@ class vk_api:
         }
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
         if response['response'] == []:
-            self.result['text'] = "Чернобыль и Припять"
+            self.result['text'] = "Имя Вашего паблика"
             return self.result
         if 'error' in response:
             msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
@@ -114,6 +115,45 @@ class vk_api:
             self.result['error'] = 1
             return self.result
         self.result['text'] = f"{response['response'][0]['first_name']} {response['response'][0]['last_name']}"
+        return self.result
+
+
+    @logger.catch
+    def is_group_member(self, user_id: int, group_id: int) -> dict:
+        """
+        VK API class method to find if user is in Group.
+        https://dev.vk.com/ru/method/groups.isMember
+
+        :type user_id: ``int``
+        :param user_id: User ID.
+
+        :type group_id: ``int``
+        :param group_id: Group ID.
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
+        self.reset_result()
+        vk_method = "groups.isMember"
+        vk_api_url = f"{self.vk_api_url}{vk_method}"
+        payload = {
+            'user_id': user_id,
+            'group_id': group_id,
+            'v': self.params['VK']['VK_API']['version']
+        }
+        headers = {
+            'Authorization': f"Bearer {self.params['VK']['VK_API']['key']}"
+        }
+
+        response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
+        if 'error' in response:
+            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+            logger.error(msg)
+            self.result['text'] = msg
+            self.result['error'] = 1
+            return self.result
+        self.result['text'] = str(response['response'])
         return self.result
 
 
@@ -159,6 +199,55 @@ class vk_api:
             return self.result
         self.result['text'] = "Message was sent"
         return self.result
+
+
+    @logger.catch
+    def search_messages(self, group_id: int, peer_id: int, count: int) -> dict:
+        """
+        VK API class method to send message.
+        https://dev.vk.com/ru/method/messages.search
+
+        :type group_id: ``int``
+        :param group_id: Public ID to message as administrator.
+
+        :type peer_id: ``int``
+        :param peer_id: Chat ID.
+
+        :type count: ``int``
+        :param count: Count of messages to return
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
+        # We will need current date in DDMMYYYY format to search all before this date.
+        # There will be tomorrow to get latest messages.
+        tomorrow = datetime.strftime(datetime.today() + timedelta(days = 1), '%d%m%Y')
+
+        self.reset_result()
+        vk_method = "messages.search"
+        vk_api_url = f"{self.vk_api_url}{vk_method}"
+        payload = {
+            'group_id': group_id,
+            'peer_id': peer_id,
+            'count': count,
+            'date': tomorrow,
+            'v': self.params['VK']['VK_API']['version']
+        }
+        headers = {
+            'Authorization': f"Bearer {self.params['VK']['VK_API']['key']}"
+        }
+
+        response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
+        if 'error' in response:
+            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+            logger.error(msg)
+            self.result['text'] = msg
+            self.result['error'] = 1
+            return self.result
+        self.result['text'] = response['response']
+        return self.result
+
 
 
     @logger.catch

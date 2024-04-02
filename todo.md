@@ -1,19 +1,26 @@
 ### ToDo List
+
 #### Common
+
 - Review todo list :)
 - Make instructions for installation and usage;
 - Make requirements.txt;
 - Make project description;
 - Comment all;
+
 #### Bugs to fix
-* There are none for now;
+
+- There are none for now;
+
 #### Telegram interactivity
+
 * Make menu button in Telegram to download bot logs;
     + Button - done;
     + Callback - no;
 - Fix callbacks for current menu;
+
 #### Important improvements
-- Line 108 in vk_api should be fixed;
+
 - Add chat ID of new message to log and use it for notifications;
 - Send to Telegram only Warnings and higher. Replace levels of according alerts;
 - Verify params from file;
@@ -21,13 +28,17 @@
 - Make processing for telegram messages;
 - Refactor main cycle for VK moderator;
 - Refactor VK errors processing, especially for VK failure;
+
 #### Possible improvements
+
 * Autorestart bots with params.json changes;
     + This should follow after params verifying;
 - Add logging with JSON;
 - All bots in one chat;
 - Add flag to log for new message if there was attachment;
+
 #### Tests and researches
+
 - Try to replace my own VK API module with https://vk-api.readthedocs.io/en/latest/index.html Pypi module;
 - Add comment remove function to VK API;
 - Try to use regexes for different susp/curse words;
