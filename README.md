@@ -17,10 +17,11 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 
 #### Bugs to fix
 
-- Get "Message was removed" even if it's not;
+- Get "Message was removed" even if it's not - fixed;
 
 #### Important improvements
 
+- Pass some parameters as arguments. Such as debug, for example;
 - Add automatical service restart if there were Errors in logs;
 - Add chat ID of new message to log and use it for notifications;
 - Verify params from file;

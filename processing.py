@@ -1,19 +1,17 @@
-# Reviewed: April 03, 2024
-
+# Reviewed: April 04, 2024
 
 from loguru import logger
 import auxiliary
 import vk_api
 import filter
 from time import sleep
-import json
 
 
 SEND_MSG_TO_VK = False
 
 
 class processing:
-    def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False) -> None:
+    def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False) -> None: # type: ignore
         """
         Processing class init
 
@@ -29,8 +27,7 @@ class processing:
         :return: Returns the class instance.
         """
 
-        self.params = aux.read_params()
-        self.filter = filter.filter(aux, processing_logger)
+        self.params = aux.read_config()
         if processing_logger == None:
             logger.remove()
             if debug_enabled:
@@ -40,6 +37,7 @@ class processing:
             self.logger = logger
         else:
             self.logger = processing_logger
+        self.filter = filter.filter(aux, self.logger)
         # Result = 0 - false
         # Result = 1 - true
         # Result = 2 - suspicious
@@ -72,7 +70,7 @@ class processing:
 
 
     @logger.catch
-    def get_username(self, main_log: logger, vk_api: vk_api, user_id: int) -> str:
+    def get_username(self, main_log: logger, vk_api: vk_api, user_id: int) -> str: # type: ignore
         """
         Processing class method to get username and process possible error in the response..
 
@@ -94,9 +92,10 @@ class processing:
 
 
     @logger.catch
-    def filter_response_processing(self, main_log: logger, vk_api: vk_api,
+    def filter_response_processing(self, main_log: logger, vk_api: vk_api,  # type: ignore
                                 message: str, username: str, group_id: int, isMember: dict,
-                                peer_id: int = None, cm_id: int = None, attachments: dict = None) -> None:
+                                peer_id: int = None, cm_id: int = None,
+                                attachments: dict = None, false_positive: bool = False) -> None:
         """
         Processing class method to work with filter response.
         I'm suppose to use this method for comments in future, so it's the dedicated function.
@@ -129,9 +128,8 @@ class processing:
         :param attachments: Message attachments, if they are.
         """
 
-        false_positive = 1
-
         filter_result = self.filter.filter_response(message, username, attachments)
+        main_log.debug(f"============== Filter response processing =================")
         main_log.debug(f"# False positive: {false_positive}")
         main_log.debug(f"# Filter result: {filter_result}")
         # Exit if None
@@ -141,10 +139,10 @@ class processing:
         # Reason: there is no more ID for messages in public chat and we can't
         #    know if message was edited. So we wait for bad bot to edit message and then
         #    through VK API search messages get possibly redacted message and check it once again.
-        if filter_result['result'] == 0 and false_positive > 0:
+        # ToDo: lookup for several messages and specify it as parameter.
+        if filter_result['result'] == 0 and false_positive == False:
             main_log.debug(f"# Clear message, wait for {self.params['VK']['check_delay']} seconds and check it once more.")
             sleep(self.params['VK']['check_delay'])
-            false_positive -= 1
             main_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = vk_api.search_messages(group_id, peer_id, self.params['VK']['messages_search_count'])['text']
             main_log.debug(f"# Last reply: {last_reply}")
@@ -156,7 +154,7 @@ class processing:
             self.filter_response_processing(main_log, vk_api,
                                             last_reply_msg, last_reply_username,
                                             group_id, isMember, last_reply_peer_id,
-                                            last_reply_cm_id, last_reply_attachments)
+                                            last_reply_cm_id, last_reply_attachments, false_positive = True)
         # If filter returns 1 - we catch something
         if filter_result['result'] == 1:
             main_log.info(f"# Message to remove from {username}: '{message}'")
@@ -188,7 +186,7 @@ class processing:
 
 
     @logger.catch
-    def message(self, response: dict, vk_api: vk_api, main_log: logger) -> None:
+    def message(self, response: dict, vk_api: vk_api, main_log: logger) -> None: # type: ignore
         """
         Processing class method to process new VK message.
 
@@ -247,7 +245,7 @@ class processing:
 
 
     @logger.catch
-    def comment(self, response: dict, vk_api: vk_api, main_log: logger) -> None:
+    def comment(self, response: dict, vk_api: vk_api, main_log: logger) -> None: # type: ignore
         """
         Processing class method to process new VK commentary.
 

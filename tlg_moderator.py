@@ -1,4 +1,4 @@
-# Reviewed: February 11, 2024
+# Reviewed: April 04, 2024
 
 from telegram import (Update, ChatMember, ChatMemberUpdated)
 from telegram.ext import (ChatMemberHandler, MessageHandler, Application, filters, ContextTypes)
@@ -23,17 +23,14 @@ urls = []
 
 aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED)
 filter = filter.filter(aux, debug_enabled = DEBUG_ENABLED)
-params = aux.read_params()
+params = aux.read_config()
 main_log_file = params['TLG']['log_path']
-cases_log_file = params['TLG']['cases_log_path']
 
 # Logging params
 if DEBUG_ENABLED:
     logger.add(main_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
-    logger.add(cases_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 else:
     logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
-    logger.add(cases_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 
 # Telegram messages logging
 tg_params = {
@@ -109,7 +106,7 @@ async def notify_and_remove(check_text_result, chat_id, message_id, context: Con
 @logger.catch
 async def moderate_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Moderate message"""
-    params = aux.read_params()
+    params = aux.read_config()
 
     res = update.to_dict()
     logger.debug(f"# Update: {res}")
@@ -179,7 +176,7 @@ async def moderate_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 def main() -> None:
     """Start the bot."""
     # Read and apply token
-    params = aux.read_params()
+    params = aux.read_config()
     app = Application.builder().token(params['TLG']['TLG_MOD']['key']).build()
 
     logger.info("Telegram moderator bot listener re/starting..")

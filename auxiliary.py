@@ -1,5 +1,4 @@
-# Reviewed: February 14, 2024
-
+# Reviewed: April 04, 2024
 
 import requests
 import json
@@ -13,7 +12,7 @@ CONFIG_FILE = "config.json"
 
 
 class auxiliary:
-    def __init__(self, aux_logger: logger = None, debug_enabled: bool = False) -> None:
+    def __init__(self, aux_logger: logger = None, debug_enabled: bool = False) -> None: # type: ignore
         """
         Auxiliary class init
 
@@ -26,13 +25,13 @@ class auxiliary:
         :return: Returns the class instance.
         """
 
-        self.params = self.read_params()
+        self.config = self.read_config()
         if aux_logger == None:
             logger.remove()
             if debug_enabled:
-                logger.add(self.params['aux_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
+                logger.add(self.config['aux_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
             else:
-                logger.add(self.params['aux_log'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
+                logger.add(self.config['aux_log'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
             self.logger = logger
         else:
             self.logger = aux_logger
@@ -74,6 +73,8 @@ class auxiliary:
         :rtype: ``dict``
         """
 
+        self.logger.debug(f"============== Do request ================")
+        self.logger.debug(f"# Requesting for: {url}")
         try:
             response = requests.request(
                 method,
@@ -100,9 +101,9 @@ class auxiliary:
             raise ValueError(msg)
 
 
-    # Read parameters from file
+    # Read parameters from config file
     @logger.catch
-    def read_params(self) -> dict:
+    def read_config(self) -> dict:
         """
         Auxiliary class method to read parameters file.
 
@@ -110,8 +111,8 @@ class auxiliary:
         :rtype: ``dict``
         """
 
-        with open(CONFIG_FILE, "r", encoding="UTF-8") as CONFIG_FILE:
-            return json.loads(CONFIG_FILE.read())
+        with open(CONFIG_FILE, "r", encoding="UTF-8") as config_file:
+            return json.loads(config_file.read())
 
 
     # Replacing Latin/Number/Other characters with Cyrillic
@@ -178,7 +179,7 @@ class auxiliary:
 
     # Listen to VK Longpoll server and manage results
     @logger.catch
-    def listen_longpoll(self, vk_api: vk_api, main_log: logger) -> dict:
+    def listen_longpoll(self, vk_api: vk_api, main_log: logger) -> dict: # type: ignore
         """
         Auxiliary class method to listen VK LongPoll server response.
 
@@ -195,8 +196,8 @@ class auxiliary:
         # # Errors counter for warnings.
         # +1 if warning was received (e.g. API key deprecated)
         # reset if next request is OK
-        errors_limit = self.params['VK']['errors_limit']
-        wait_period = self.params['VK']['wait_period']
+        errors_limit = self.config['VK']['errors_limit']
+        wait_period = self.config['VK']['wait_period']
         main_log.debug("# Start to listen LongPoll API. Errors counter was resetted")
         longpoll = {
             'errors_counter': 0,

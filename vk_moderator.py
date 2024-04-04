@@ -1,5 +1,4 @@
-# Reviewed: April 03, 2024
-
+# Reviewed: April 04, 2024
 
 from loguru import logger
 from notifiers.logging import NotificationHandler
@@ -15,7 +14,7 @@ DEBUG_ENABLED = False
 @logger.catch
 def main() -> None:
     aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED)
-    params = aux.read_params()
+    params = aux.read_config()
     main_log_file = params['VK']['log_path']
     aux = None
 

@@ -1,5 +1,4 @@
-# Reviewed: February 14, 2024
-
+# Reviewed: April 04, 2024
 
 import re
 from loguru import logger
@@ -7,7 +6,7 @@ import auxiliary
 
 
 class filter:
-    def __init__(self, aux: auxiliary, filter_logger: logger = None, debug_enabled: bool = False) -> None:
+    def __init__(self, aux: auxiliary, filter_logger: logger = None, debug_enabled: bool = False) -> None: # type: ignore
         """
         Filter class init
 
@@ -23,7 +22,7 @@ class filter:
         :return: Returns the class instance.
         """
 
-        self.params = aux.read_params()
+        self.params = aux.read_config()
         self.aux = aux
         if filter_logger == None:
             logger.remove()
@@ -71,6 +70,7 @@ class filter:
         :rtype: ``dict``
         """
         
+        self.logger.debug(f"================ Filter response ==================")
         self.logger.debug("# Filtering response")
         # Attachments checks
         check_attachments_result = self.check_attachments(attachments, username)

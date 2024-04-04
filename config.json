@@ -8,17 +8,18 @@
             "url": "https://api.vk.com/method/",
             "group_id": 0,
             "delete_for_all": 1,
-            "version": "5.131"
+            "version": "5.199"
         },
         "chats": {
             "2000000001": "Main chat"
         },
         "log_path": "/var/log/moderator_bot/vk_moderator.log",
-        "cases_log_path": "/var/log/moderator_bot/vk_moderator_cases.log",
-        "service_name": "vk",
+                "service_name": "vk",
         "use_ssl": "True",
         "errors_limit": 3,
-        "wait_period": 10
+        "wait_period": 10,
+        "check_delay": 5,
+        "messages_search_count": 1
     },
     "TLG": {
         "TLG_MOD": {
@@ -33,7 +34,6 @@
             "api_url": "https://api.telegram.org/botTLG_KEY/sendMessage"
         },
         "log_path": "/var/log/moderator_bot/tlg_moderator.log",
-        "cases_log_path": "/var/log/moderator_bot/tlg_moderator_cases.log",
         "service_name": "tlg_moderator"
     },
     "aux_log": "/var/log/moderator_bot/aux.log",

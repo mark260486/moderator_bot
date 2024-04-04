@@ -1,5 +1,4 @@
-# Reviewed: April 03, 2024
-
+# Reviewed: April 04, 2024
 
 import random
 from loguru import logger
@@ -8,7 +7,7 @@ import auxiliary
 
 
 class vk_api:
-    def __init__(self, aux: auxiliary, vk_logger: logger, debug_enabled: bool = False) -> None:
+    def __init__(self, aux: auxiliary, vk_logger: logger, debug_enabled: bool = False) -> None: # type: ignore
         """
         VK API class init
 
@@ -24,7 +23,7 @@ class vk_api:
         :return: Returns the class instance.
         """
 
-        self.params = aux.read_params()
+        self.params = aux.read_config()
         self.use_ssl = self.params['VK']['use_ssl']
         self.lp_key = ""
         self.lp_ts = 0
@@ -284,8 +283,8 @@ class vk_api:
         }
 
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
-        if 'error' in response:
-            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+        if response['response'][0]['error']['code'] != 0:
+            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
             logger.error(msg)
             self.result['text'] = msg
             self.result['error'] = 1
