@@ -9,7 +9,7 @@ import vk_api
 
 
 USE_SSL = True
-PARAMS_FILE = "params.json"
+CONFIG_FILE = "config.json"
 
 
 class auxiliary:
@@ -110,8 +110,8 @@ class auxiliary:
         :rtype: ``dict``
         """
 
-        with open(PARAMS_FILE, "r", encoding="UTF-8") as params_file:
-            return json.loads(params_file.read())
+        with open(CONFIG_FILE, "r", encoding="UTF-8") as CONFIG_FILE:
+            return json.loads(CONFIG_FILE.read())
 
 
     # Replacing Latin/Number/Other characters with Cyrillic

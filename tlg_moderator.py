@@ -10,7 +10,7 @@ import auxiliary
 import filter
 
 
-PARAMS_FILE = "params.json"
+CONFIG_FILE = "config.json"
 DEBUG_ENABLED = False
 
 
