@@ -30,6 +30,8 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 - Refactor main cycle for VK moderator;
 - Refactor VK errors processing, especially for VK failure;
 - Refactor config;
+- We need to check every possible replacement for curses, but it will take too much time and CPU. Possible solutions:
+    + Use regexes;
 
 #### Possible improvements
 

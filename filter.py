@@ -144,7 +144,6 @@ class filter:
             self.result['result'] = 2
             self.result['text'] = msg
             self.result['case'] = "сообщение на латинице, имя пользователя на латинице, вероятно, бот."
-            return self.result
 
         # Check for phone numbers
         if self.check_for_phone(text_to_check):
@@ -152,7 +151,6 @@ class filter:
             self.result['result'] = 2
             self.result['text'] = msg
             self.result['case'] = "номер телефона в тексте, вероятно, бот."
-            return self.result
 
         # Check if message contains mishmash
         if self.check_for_english(text_to_check):
@@ -160,7 +158,6 @@ class filter:
             self.result['result'] = 2
             self.result['text'] = msg
             self.result['case'] = "сообщение на латинице, вероятно, бот."
-            return self.result
 
         # Replace Latin characters with Cyrillic
         text_to_check = self.aux.lat_to_cyr(text_to_check, self.params['word_db']['dict'])
@@ -169,6 +166,8 @@ class filter:
         curses_list_check = self.check_for_curses(text_to_check)
         if curses_list_check['result'] >= 1:
             return curses_list_check
+        elif self.result['result'] == 2:
+            return self.result
 
         # Suspicious words check
         # If we have more than X words - kill it
