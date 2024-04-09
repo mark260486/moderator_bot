@@ -1,4 +1,4 @@
-# Reviewed: April 04, 2024
+# Reviewed: April 09, 2024
 
 import re
 from loguru import logger
@@ -220,7 +220,7 @@ class filter:
             self.logger.debug(f"# {msg}")
             self.result['result'] = 2
             self.result['text'] = msg
-            self.result['case'] = ""
+            self.result['case'] = "недостаточно подозрительных слов для удаления сообщения."
             return self.result
         if len(res) == 0:
             self.result['result'] = 0

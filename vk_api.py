@@ -107,8 +107,8 @@ class vk_api:
         if response['response'] == []:
             self.result['text'] = "Чернобыль и Припять"
             return self.result
-        if 'error' in response:
-            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+        if 'error' in response['response'][0].keys():
+            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
             logger.error(msg)
             self.result['text'] = msg
             self.result['error'] = 1
@@ -146,12 +146,6 @@ class vk_api:
         }
 
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
-        if 'error' in response:
-            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
-            logger.error(msg)
-            self.result['text'] = msg
-            self.result['error'] = 1
-            return self.result
         self.result['text'] = str(response['response'])
         return self.result
 
@@ -190,8 +184,8 @@ class vk_api:
         }
 
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
-        if 'error' in response:
-            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+        if 'error' in response['response'][0].keys():
+            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
             logger.error(msg)
             self.result['text'] = msg
             self.result['error'] = 1
@@ -238,8 +232,8 @@ class vk_api:
         }
 
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
-        if 'error' in response:
-            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+        if 'error' in response['response'].keys():
+            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
             logger.error(msg)
             self.result['text'] = msg
             self.result['error'] = 1
@@ -283,7 +277,7 @@ class vk_api:
         }
 
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
-        if response['response'][0]['error']['code'] != 0:
+        if 'error' in response['response'][0].keys():
             msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
             logger.error(msg)
             self.result['text'] = msg
@@ -291,7 +285,6 @@ class vk_api:
             return self.result
         self.result['text'] = "Message was deleted"
         return self.result
-
 
 
     @logger.catch
@@ -319,8 +312,8 @@ class vk_api:
         }
 
         response = self.aux.do_request("GET", vk_api_url, headers = headers, params = payload, use_ssl = self.use_ssl)
-        if 'error' in response:
-            msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+        if 'error' in response['response'].keys():
+            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
             logger.error(msg)
             self.result['text'] = msg
             self.result['error'] = 1
