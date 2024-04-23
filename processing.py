@@ -1,4 +1,4 @@
-# Reviewed: April 04, 2024
+# Reviewed: April 09, 2024
 
 from loguru import logger
 import auxiliary
@@ -7,11 +7,9 @@ import filter
 from time import sleep
 
 
-SEND_MSG_TO_VK = False
-
-
 class processing:
-    def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False) -> None: # type: ignore
+    def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False, # type: ignore
+                 send_msg_to_vk: bool = False) -> None:
         """
         Processing class init
 
@@ -38,6 +36,7 @@ class processing:
         else:
             self.logger = processing_logger
         self.filter = filter.filter(aux, self.logger)
+        self.send_msg_to_vk = send_msg_to_vk
         # Result = 0 - false
         # Result = 1 - true
         # Result = 2 - suspicious
@@ -79,7 +78,7 @@ class processing:
 
         :type vk_api: ``vk_api``
         :param vk_api: VK API Class instance.
-        
+
         :type user_id: ``int``
         :param user_id: User ID.
         """
@@ -102,7 +101,7 @@ class processing:
 
         :type main_log: ``logger``
         :param main_log: Logger instance.
-        
+
         :type vk_api: ``vk_api``
         :param vk_api: VK API Class instance.
 
@@ -117,7 +116,7 @@ class processing:
 
         :type isMember: ``dict``
         :param isMember: Is user member of the public.
-        
+
         :type peer_id: ``int``
         :param peer_id: Peer ID. It is Int chat ID.
 
@@ -157,31 +156,38 @@ class processing:
                                             last_reply_cm_id, last_reply_attachments, false_positive = True)
         # If filter returns 1 - we catch something
         if filter_result['result'] == 1:
-            main_log.info(f"# Message to remove from {username}: '{message}'")
+            div = "-----------------------------"
+            msg_main = f"# Message to remove from {username}: '{message}'."
+            words = filter_result['text']
+            case = f"# Case: {filter_result['case']}"
+            msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
+            main_log.info(msg)
             main_log.debug(f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}")
             delete_result = vk_api.delete_message(group_id, cm_id, peer_id)
             main_log.debug(f"# Delete result: {delete_result['text']}")
 
             if delete_result['error'] == 0:
                 main_log.info("# Message was removed")
-                if SEND_MSG_TO_VK:
+                if self.send_msg_to_vk:
                     send_result = vk_api.send_message(f"Сообщение от {username} было удалено автоматическим фильтром. Причина: {filter_result['case']}", group_id, peer_id)
             else:
-                main_log.error(f"# Message delete error: {delete_result['text']}")
                 main_log.info("# Message was not removed")
-                if SEND_MSG_TO_VK:
+                if self.send_msg_to_vk:
                     send_result = vk_api.send_message(f"# Сообщение от {username} не было удалено автоматическим фильтром.", group_id, peer_id)
 
-            if SEND_MSG_TO_VK:
+            if self.send_msg_to_vk:
                 if send_result['error'] == 0:
                     main_log.info(f"# Service message was sent to {self.params['VK']['chats'][str(peer_id)]}")
-                else:
-                    main_log.error(f"# Service message send error: {send_result}")
         # If filter returns 2 - we should get warning to Telegram
         if filter_result['result'] == 2:
-            msg = f"# Suspicious message from {username}: '{message}' was found.\n\n# Case: {filter_result['case']}"
+            div = "-----------------------------"
+            msg_main = f"# Suspicious message from {username}: '{message}' was found."
+            words = filter_result['text']
+            case = f"# Case: {filter_result['case']}"
+            # This was made for avoid mess in msg
+            msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
             main_log.info(msg)
-            if SEND_MSG_TO_VK:
+            if self.send_msg_to_vk:
                 main_log.info(f"# Text: {filter_result['text']}.")
 
 

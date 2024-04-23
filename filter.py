@@ -1,4 +1,4 @@
-# Reviewed: April 09, 2024
+# Reviewed: April 23, 2024
 
 import re
 from loguru import logger
@@ -12,7 +12,7 @@ class filter:
 
         :type aux: ``auxiliary``
         :param aux: Auxiliary class instance.
-        
+
         :type filter_logger: ``logger``
         :param filter_logger: Logger instance.
 
@@ -69,7 +69,7 @@ class filter:
         :return: Returns the result as dictionary.
         :rtype: ``dict``
         """
-        
+
         self.logger.debug(f"================ Filter response ==================")
         self.logger.debug("# Filtering response")
         # Attachments checks
@@ -103,7 +103,7 @@ class filter:
         :return: Returns the result as dictionary.
         :rtype: ``dict``
         """
-        
+
         self.reset_results()
         for attachment in attachments:
             self.logger.debug(f"Checking attachment of type {attachment['type']}")
@@ -160,7 +160,7 @@ class filter:
             self.result['case'] = "сообщение на латинице, вероятно, бот."
 
         # Replace Latin characters with Cyrillic
-        text_to_check = self.aux.lat_to_cyr(text_to_check, self.params['word_db']['dict'])
+        # text_to_check = self.aux.lat_to_cyr(text_to_check, self.params['word_db']['dict'])
 
         # Curses list check
         curses_list_check = self.check_for_curses(text_to_check)
@@ -185,7 +185,7 @@ class filter:
     @logger.catch
     def check_for_english(self, text_to_check):
         self.reset_results()
-        self.logger.debug(f"# Checking text for english: {text_to_check}")
+        self.logger.debug(f"# Checking text for english")
         text_check = re.findall("[A-Za-z].+", text_to_check)
         if text_check:
             return True
@@ -195,7 +195,7 @@ class filter:
     @logger.catch
     def check_for_suspicious_words(self, text_to_check):
         self.reset_results()
-        self.logger.debug(f"# Checking text for suspicious words: {text_to_check}")
+        self.logger.debug(f"# Checking text for suspicious words")
         # If we have more than X words - kill it
         max_points = self.params['word_db']['blacklist']['suspicious_points_limit']
         res = []
@@ -211,7 +211,7 @@ class filter:
         if len(res) >= max_points:
             msg = f"Suspicious '{res}' was found.\nMore than {max_points} suspicious words were found."
             self.logger.debug(f"# {msg}")
-            self.result['result'] = 2
+            self.result['result'] = 1
             self.result['text'] = msg
             self.result['case'] = "подозрительный набор слов, спам, реклама."
             return self.result
@@ -230,7 +230,7 @@ class filter:
     @logger.catch
     def check_for_links(self, text_to_check):
         self.reset_results()
-        self.logger.debug(f"# Checking text for links: {text_to_check}")
+        self.logger.debug(f"# Checking text for links")
         for item in self.params['word_db']['blacklist']['spam_list']:
             if item in text_to_check.lower().replace(" ", ""):
                 msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
@@ -246,11 +246,24 @@ class filter:
     @logger.catch
     def check_for_curses(self, text_to_check):
         self.reset_results()
-        self.logger.debug(f"# Checking text for curses: {text_to_check}")
+        self.logger.debug(f"# Checking text for curses")
         text_to_check.replace('ё', 'е')
         text_to_check.replace('\n', ' ')
         text_to_check = text_to_check.lower()
         res = []
+        regex_blacklist = self.params['word_db']['blacklist']['regex_list']
+        for regex in regex_blacklist:
+            matches = re.search(re.compile(regex), text_to_check)
+            if matches != None:
+                print(f"Group: {matches.group()}")
+                print(f"String: {matches.string}")
+                print(f"Start/end: {matches.start(), matches.end()}")
+                print(f"Word: {text_to_check[matches.start():matches.end()]}")
+                print("======================================================")
+                if not self.check_for_whitelist(text_to_check[matches.start():matches.end()]):
+                    res.append(f"{matches.group()} in {matches.string}")
+                    # self.logger.info(f"Regex results: {res}")
+
         for item in self.params['word_db']['blacklist']['curses_list']:
             pattern = r'(\b\S*%s\S*\b)' % item
             # Search all occurences in the text
@@ -260,6 +273,7 @@ class filter:
                 for match in matches:
                     if not self.check_for_whitelist(match):
                         res.append(f"{item} in {match}")
+
         if res:
             msg = f"Forbidden '{res}' from curses list was found."
             self.logger.debug(f"# {msg}")
@@ -274,7 +288,7 @@ class filter:
     @logger.catch
     def check_for_whitelist(self, text_to_check):
         self.reset_results()
-        self.logger.debug(f"# Checking text for whitelist: {text_to_check}")
+        self.logger.debug(f"# Checking text for whitelist")
         for item in self.params['word_db']['whitelist']:
             pattern = r'(\b\S*%s\S*\b)' % item
             match = re.findall(pattern, text_to_check)
@@ -286,9 +300,10 @@ class filter:
 
     @logger.catch
     def check_for_phone(self, text_to_check):
-        text = text_to_check.lower()
+        self.reset_results()
+        self.logger.debug(f"# Checking text for phones")
         pattern = r'\+\d+([!\s\(-_]?)+\d+([!\s\)-_]?)+\d+([ _-]?)+\d+([ _-]?)+\d'
-        match = re.search(pattern, text)
+        match = re.search(pattern, text_to_check)
         if match:
             return(match.group())
         return None

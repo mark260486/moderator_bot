@@ -30,8 +30,6 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 - Refactor main cycle for VK moderator;
 - Refactor VK errors processing, especially for VK failure;
 - Refactor config;
-- We need to check every possible replacement for curses, but it will take too much time and CPU. Possible solutions:
-    + Use regexes;
 
 #### Possible improvements
 
@@ -53,7 +51,6 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 * Try to replace my own VK API module with https://vk-api.readthedocs.io/en/latest/index.html Pypi module;
     + Playing with VK Wave module;
 - Add comment remove function to VK API;
-- Try to use regexes for different susp/curse words;
 - Make different wait periods for different errors at VK API request;
 * Make tests about user kick;
     + Message about kick - need to fix;
@@ -64,4 +61,4 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
     + implement class/functions to work with DB;
     + implement limit to removed messages to get banned;
     + implement Telegram menu buttons to work with DB;
-- Maybe it is worth to make all bot async.
+- It is truly worth to make all async.

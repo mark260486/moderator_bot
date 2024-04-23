@@ -1,4 +1,4 @@
-# Reviewed: April 04, 2024
+# Reviewed: April 09, 2024
 
 from loguru import logger
 from notifiers.logging import NotificationHandler
@@ -8,7 +8,8 @@ import auxiliary
 import processing
 
 
-DEBUG_ENABLED = False
+DEBUG_ENABLED = True
+SEND_MSG_TO_VK = False
 
 
 @logger.catch
@@ -34,7 +35,7 @@ def main() -> None:
         logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 
     aux = auxiliary.auxiliary(main_log)
-    proc = processing.processing(aux, main_log)
+    proc = processing.processing(aux, main_log, DEBUG_ENABLED, SEND_MSG_TO_VK)
 
     # logger.add(tg_handler, format = "{message}", level = "INFO")
     main_log.info(f"# VK Moderator bot is (re)starting...")

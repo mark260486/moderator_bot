@@ -21,10 +21,11 @@ username = ""
 urls = []
 
 
-aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED)
+aux = auxiliary.auxiliary(logger, debug_enabled = DEBUG_ENABLED)
 filter = filter.filter(aux, debug_enabled = DEBUG_ENABLED)
 params = aux.read_config()
 main_log_file = params['TLG']['log_path']
+logger.remove()
 
 # Logging params
 if DEBUG_ENABLED:
@@ -134,7 +135,7 @@ async def moderate_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if urls != []:
         for url in urls:
             check_url_result = filter.check_for_links(url)
-    
+
         logger.debug(f"# Filter result: {check_url_result}")
         if check_url_result['result'] == 1:
             logger.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
