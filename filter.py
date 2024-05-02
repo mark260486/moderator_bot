@@ -260,9 +260,9 @@ class filter:
                 print(f"Start/end: {matches.start(), matches.end()}")
                 print(f"Word: {text_to_check[matches.start():matches.end()]}")
                 print("======================================================")
-                if not self.check_for_whitelist(text_to_check[matches.start():matches.end()]):
+                if not self.check_for_whitelist(matches.string):
                     res.append(f"{matches.group()} in {matches.string}")
-                    # self.logger.info(f"Regex results: {res}")
+                    self.logger.info(f"Regex results: {res}")
 
         for item in self.params['word_db']['blacklist']['curses_list']:
             pattern = r'(\b\S*%s\S*\b)' % item

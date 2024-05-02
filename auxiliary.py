@@ -1,4 +1,4 @@
-# Reviewed: April 04, 2024
+# Reviewed: May 02, 2024
 
 import requests
 import json
@@ -7,12 +7,9 @@ import time
 import vk_api
 
 
-USE_SSL = True
-CONFIG_FILE = "config.json"
-
-
 class auxiliary:
-    def __init__(self, aux_logger: logger = None, debug_enabled: bool = False) -> None: # type: ignore
+    def __init__(self, aux_logger: logger = None, debug_enabled: bool = False, # type: ignore
+                 use_ssl: bool = True, config_file: str = "config.json") -> None:
         """
         Auxiliary class init
 
@@ -22,10 +19,19 @@ class auxiliary:
         :type debug_enabled: ``bool``
         :param debug_enabled: Boolean to switch on and off debugging. False by default.
 
+        :type use_ssl: ``bool``
+        :param use_ssl: Boolean to switch on and off SSL requests. True by default.
+
+        :type config_file: ``str``
+        :param config_file: Path to the config file. 'config.json' by default.
+
         :return: Returns the class instance.
         """
 
+        self.config_file = config_file
         self.config = self.read_config()
+        self.use_ssl = use_ssl
+
         if aux_logger == None:
             logger.remove()
             if debug_enabled:
@@ -47,7 +53,7 @@ class auxiliary:
     # # # # # # # # Auxiliary section start # # # # # # # # # #
     @logger.catch
     def do_request(self, method: str, url: str, headers: dict = None, params: dict = None,
-                   data: dict = None, auth: str = None, use_ssl: bool = USE_SSL) -> dict:
+                   data: dict = None, auth: str = None, use_ssl: bool = True) -> dict:
         """
         A wrapper for requests lib to send our requests and handle requests and responses better.
 
@@ -111,7 +117,7 @@ class auxiliary:
         :rtype: ``dict``
         """
 
-        with open(CONFIG_FILE, "r", encoding="UTF-8") as config_file:
+        with open(self.config_file, "r", encoding="UTF-8") as config_file:
             return json.loads(config_file.read())
 
 

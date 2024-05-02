@@ -1,4 +1,4 @@
-# Reviewed: April 09, 2024
+# Reviewed: May 02, 2024
 
 from loguru import logger
 import auxiliary
@@ -7,11 +7,11 @@ import filter
 from time import sleep
 
 
-class processing:
+class vk_processing:
     def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False, # type: ignore
                  send_msg_to_vk: bool = False) -> None:
         """
-        Processing class init
+        VK Processing class init
 
         :type aux: ``auxiliary``
         :param aux: Auxiliary class instance.

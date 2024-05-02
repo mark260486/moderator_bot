@@ -1,23 +1,28 @@
-# Reviewed: April 09, 2024
+# Reviewed: May 02, 2024
 
 from loguru import logger
 from notifiers.logging import NotificationHandler
 
 import vk_api
 import auxiliary
-import processing
+import vk_processing
 
 
+# Move these to arguments
 DEBUG_ENABLED = True
 SEND_MSG_TO_VK = False
+CONFIG_FILE = "/home/mark/moderator_bot/config.json"
 
 
 @logger.catch
 def main() -> None:
-    aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED)
+    aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED, config_file = CONFIG_FILE)
     params = aux.read_config()
     main_log_file = params['VK']['log_path']
     aux = None
+
+    # Need to remove default logger settings
+    logger.remove()
 
     # Telegram messages logging
     tg_params = {
@@ -34,10 +39,9 @@ def main() -> None:
     else:
         logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 
-    aux = auxiliary.auxiliary(main_log)
-    proc = processing.processing(aux, main_log, DEBUG_ENABLED, SEND_MSG_TO_VK)
+    aux = auxiliary.auxiliary(main_log, debug_enabled = DEBUG_ENABLED, config_file = CONFIG_FILE)
+    proc = vk_processing.vk_processing(aux, main_log, DEBUG_ENABLED, SEND_MSG_TO_VK)
 
-    # logger.add(tg_handler, format = "{message}", level = "INFO")
     main_log.info(f"# VK Moderator bot is (re)starting...")
 
     # Create VK API object
