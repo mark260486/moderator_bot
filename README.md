@@ -22,14 +22,11 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 #### Important improvements
 
 - Define parameters we can move from Config file to Arguments;
-- Refactor Config file to Python format;
 - Add automatical service restart if there were Errors in logs;
 - Add chat ID of new message to log and use it for notifications;
 - Verify params from file;
 - Change suspicious words check procedure, too many false cases (send warning to Tlg?);
-- Refactor main cycle for VK moderator;
 - Refactor VK errors processing, especially for VK failure;
-- Refactor config;
 - If the message was sent no by User in Group, then add this as point for suspisious points in Filter check;
 
 #### Possible improvements

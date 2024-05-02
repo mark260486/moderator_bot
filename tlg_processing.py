@@ -1,12 +1,13 @@
 # Reviewed: May 02, 2024
 
+from loguru import logger as tlg_proc_log
 from loguru import logger
-from auxiliary import auxiliary
-from filter import filter
-from telegram import (Update, ChatMember, ChatMemberUpdated)
-from telegram.ext import (ContextTypes)
+from filter import Filter
+from telegram import Update, ChatMember, ChatMemberUpdated
+from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from typing import Optional, Tuple
+from config import Telegram, Logs
 
 
 text = ""
@@ -16,16 +17,13 @@ username = ""
 urls = []
 
 
-class tlg_processing:
-    def __init__(self, aux: auxiliary, processing_logger: logger = None, debug_enabled: bool = False) -> None: # type: ignore
+class TLG_processing:
+    def __init__(self, tlg_proc_log: logger = tlg_proc_log, debug_enabled: bool = False) -> None: # type: ignore
         """
         Telegram Processing class init
 
-        :type aux: ``auxiliary``
-        :param aux: Auxiliary class instance.
-
-        :type processing_logger: ``logger``
-        :param processing_logger: Logger instance.
+        :type processing_tlg_log: ``logger``
+        :param processing_tlg_log: Logger instance.
 
         :type debug_enabled: ``bool``
         :param debug_enabled: Boolean to switch on and off debugging. False by default.
@@ -33,17 +31,17 @@ class tlg_processing:
         :return: Returns the class instance.
         """
 
-        self.params = aux.read_config()
-        if processing_logger == None:
-            logger.remove()
+        if tlg_proc_log == None:
+            tlg_proc_log.remove()
             if debug_enabled:
-                logger.add(self.params['processing_log'], level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
+                tlg_proc_log.add(Logs.processing_log, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
+                tlg_proc_log.debug("# Telegram Processing class will run in Debug mode.")
             else:
-                logger.add(self.params['processing_log'], level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
-            self.logger = logger
+                tlg_proc_log.add(Logs.processing_log, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
+            self.tlg_proc_log = tlg_proc_log
         else:
-            self.logger = processing_logger
-        self.filter = filter(aux, self.logger)
+            self.tlg_proc_log = tlg_proc_log
+        self.filter = Filter(debug_enabled = debug_enabled)
         # Result = 0 - false
         # Result = 1 - true
         # Result = 2 - suspicious
@@ -54,7 +52,7 @@ class tlg_processing:
         }
 
 
-    @logger.catch
+    @tlg_proc_log.catch
     def extract_status_change(self, chat_member_update: ChatMemberUpdated) -> Optional[Tuple[bool, bool]]:
         """Takes a ChatMemberUpdated instance and extracts whether the 'old_chat_member' was a member
         of the chat and whether the 'new_chat_member' is a member of the chat. Returns None, if
@@ -81,7 +79,7 @@ class tlg_processing:
         return was_member, is_member
 
 
-    @logger.catch
+    @tlg_proc_log.catch
     async def greet_chat_members(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Greets new users in chats and announces when someone leaves"""
         result = self.extract_status_change(update.chat_member)
@@ -94,34 +92,35 @@ class tlg_processing:
 
         msg = ""
         if not was_member and is_member:
-            msg = f"{self.params['TLG']['greeting_msg']}"
+            msg = f"{Telegram.greeting_msg}"
         elif was_member and not is_member:
-            if any(admin in cause_name for admin in self.params['TLG']['admin_ids']):
-                msg = f"{self.params['TLG']['ban_msg']}"
+            if any(admin in cause_name for admin in Telegram.admin_ids):
+                msg = f"{Telegram.ban_msg}"
                 if "><" in member_name:
-                    msg = f"{self.params['TLG']['clear_msg']}"
+                    msg = f"{Telegram.clear_msg}"
             else:
-                msg = f"{self.params['TLG']['leave_msg']}"
-        logger.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
-        await context.bot.send_message(self.params['TLG']['TLG_MOD']['chat_id'], msg, parse_mode = ParseMode.HTML)
+                msg = f"{Telegram.leave_msg}"
+        tlg_proc_log.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
+        await context.bot.send_message(Telegram.telegram_moderator.chat_id, msg, parse_mode = ParseMode.HTML)
 
 
-    @logger.catch
+    @tlg_proc_log.catch
     async def notify_and_remove(self, check_text_result, chat_id, message_id, context: ContextTypes.DEFAULT_TYPE):
         if check_text_result['result'] == 1:
-            logger.info(f"Message to remove from {first_name}(@{username}): '{text.replace('.', '[.]')}'")
+            tlg_proc_log.info(f"Message to remove from {first_name}(@{username}): '{text.replace('.', '[.]')}'")
             reason = check_text_result['case']
 
             await context.bot.delete_message(chat_id, message_id)
-            await context.bot.send_message(self.params['TLG']['TLG_MOD']['chat_id'], f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
+            await context.bot.send_message(Telegram.telegram_moderator.chat_id,
+                                           f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
 
 
-    @logger.catch
+    @tlg_proc_log.catch
     async def moderate_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Moderate message"""
 
         res = update.to_dict()
-        logger.debug(f"# Update: {res}")
+        tlg_proc_log.debug(f"# Update: {res}")
 
         # Reset globals for future check
         global text, caption, first_name, username
@@ -147,12 +146,12 @@ class tlg_processing:
             for url in urls:
                 check_url_result = self.filter.check_for_links(url)
 
-            logger.debug(f"# Filter result: {check_url_result}")
+            tlg_proc_log.debug(f"# Filter result: {check_url_result}")
             if check_url_result['result'] == 1:
-                logger.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
+                tlg_proc_log.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
                 await context.bot.delete_message(chat_id, message_id)
                 await context.bot.send_message(
-                    self.params['TLG']['TLG_MOD']['chat_id'], 
+                    Telegram.telegram_moderator.chat_id, 
                     f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: подозрительная ссылка."
                     )
 
@@ -171,7 +170,7 @@ class tlg_processing:
 
         chat_id = res[message_key]['chat']['id']
         message_id = res[message_key]['message_id']
-        logger.debug(f"# Text: {text}, Caption: {caption}, Name: {first_name}, Login: {username}, URLS: {urls}, Chat ID: {chat_id}, Message ID: {message_id}")
+        tlg_proc_log.debug(f"# Text: {text}, Caption: {caption}, Name: {first_name}, Login: {username}, URLS: {urls}, Chat ID: {chat_id}, Message ID: {message_id}")
 
         check_text_result = ""
         if text != "":
@@ -179,6 +178,6 @@ class tlg_processing:
         if caption != "":
             check_text_result = self.filter.check_text(caption, username)
 
-        logger.debug(f"# Filter result: {check_text_result}")
+        tlg_proc_log.debug(f"# Filter result: {check_text_result}")
         if check_text_result:
             await self.notify_and_remove(check_text_result, chat_id, message_id, context)
