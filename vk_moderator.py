@@ -1,22 +1,34 @@
 # Reviewed: May 02, 2024
 
+import argparse
 from loguru import logger
 from notifiers.logging import NotificationHandler
 
-import vk_api
-import auxiliary
-import vk_processing
-
-
-# Move these to arguments
-DEBUG_ENABLED = True
-SEND_MSG_TO_VK = False
-CONFIG_FILE = "/home/mark/moderator_bot/config.json"
+from vk_api import vk_api
+from auxiliary import auxiliary
+from vk_processing import vk_processing
 
 
 @logger.catch
 def main() -> None:
-    aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED, config_file = CONFIG_FILE)
+    # Parsing args
+    parser = argparse.ArgumentParser(
+        prog = "VK Moderator bot",
+        description = "This script can strictly moderate VK public's chats"
+        )
+
+    parser.add_argument("-d", "--debug", dest = "debug_enabled", action = "store_true")
+    parser.add_argument("-s", "--send_msg",
+                        dest = "send_msg_to_vk",
+                        action = "store_true",
+                        help = "Send Notification message to VK Chat about Message removal or error")
+    parser.add_argument("-c", "--config",
+                        dest = "config_file",
+                        default = "config.json",
+                        type = str, required = True)
+    args = parser.parse_args()
+
+    aux = auxiliary(debug_enabled = args.debug_enabled, config_file = args.config_file)
     params = aux.read_config()
     main_log_file = params['VK']['log_path']
     aux = None
@@ -34,18 +46,18 @@ def main() -> None:
 
     # Logging params
     main_log = logger.bind(name = "main_log")
-    if DEBUG_ENABLED:
+    if args.debug_enabled:
         logger.add(main_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
     else:
         logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 
-    aux = auxiliary.auxiliary(main_log, debug_enabled = DEBUG_ENABLED, config_file = CONFIG_FILE)
-    proc = vk_processing.vk_processing(aux, main_log, DEBUG_ENABLED, SEND_MSG_TO_VK)
+    aux = auxiliary(main_log, debug_enabled = args.debug_enabled, config_file = args.config_file)
+    proc = vk_processing(aux, main_log, args.debug_enabled, args.send_msg_to_vk)
 
     main_log.info(f"# VK Moderator bot is (re)starting...")
 
     # Create VK API object
-    vk = vk_api.vk_api(aux, vk_logger = main_log)
+    vk = vk_api(aux, vk_logger = main_log)
 
     # Get longpoll server parameters
     main_log.debug("# Get LongPoll server parameters to listen")

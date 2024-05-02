@@ -1,5 +1,6 @@
 # Reviewed: May 02, 2024
 
+import argparse
 from telegram import (Update)
 from telegram.ext import (ChatMemberHandler, MessageHandler, Application, filters)
 from loguru import logger
@@ -8,14 +9,23 @@ import auxiliary
 from tlg_processing import tlg_processing
 
 
-CONFIG_FILE = "/home/mark/moderator_bot/config.json"
-DEBUG_ENABLED = True
-
-
 @logger.catch
 def main() -> None:
     """Start the bot."""
-    aux = auxiliary.auxiliary(debug_enabled = DEBUG_ENABLED, config_file = CONFIG_FILE)
+    # Parsing args
+    parser = argparse.ArgumentParser(
+        prog = "VK Moderator bot",
+        description = "This script can strictly moderate VK public's chats"
+        )
+
+    parser.add_argument("-d", "--debug", dest = "debug_enabled", action = "store_true")
+    parser.add_argument("-c", "--config",
+                        dest = "config_file",
+                        default = "config.json",
+                        type = str, required = True)
+    args = parser.parse_args()
+
+    aux = auxiliary.auxiliary(debug_enabled = args.debug_enabled, config_file = args.config_file)
     params = aux.read_config()
     main_log_file = params['TLG']['log_path']
 
@@ -23,7 +33,7 @@ def main() -> None:
     logger.remove()
 
     # Logging params
-    if DEBUG_ENABLED:
+    if args.debug_enabled:
         logger.add(main_log_file, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
     else:
         logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
@@ -39,7 +49,7 @@ def main() -> None:
     logger.info("Telegram moderator bot listener re/starting..")
 
     # Get TLG Processing class instance
-    proc = tlg_processing(aux, debug_enabled = DEBUG_ENABLED)
+    proc = tlg_processing(aux, debug_enabled = args.debug_enabled)
 
     # Apply TLG token
     app = Application.builder().token(params['TLG']['TLG_MOD']['key']).build()
