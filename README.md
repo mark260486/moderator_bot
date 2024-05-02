@@ -21,15 +21,16 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 
 #### Important improvements
 
-- Pass some parameters as arguments. Such as debug, for example;
+- Define parameters we can move from Config file to Arguments;
+- Refactor Config file to Python format;
 - Add automatical service restart if there were Errors in logs;
 - Add chat ID of new message to log and use it for notifications;
 - Verify params from file;
 - Change suspicious words check procedure, too many false cases (send warning to Tlg?);
-- Make processing for telegram messages;
 - Refactor main cycle for VK moderator;
 - Refactor VK errors processing, especially for VK failure;
 - Refactor config;
+- If the message was sent no by User in Group, then add this as point for suspisious points in Filter check;
 
 #### Possible improvements
 
@@ -61,4 +62,5 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
     + implement class/functions to work with DB;
     + implement limit to removed messages to get banned;
     + implement Telegram menu buttons to work with DB;
-- It is truly worth to make all async.
+- Maybe it is worth to make all bot async;
+- Implement web UI for bot management.
