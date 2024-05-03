@@ -17,7 +17,7 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 
 #### Bugs to fix
 
-- Get "Message was removed" even if it's not - fixed;
+- None for now;
 
 #### Important improvements
 
