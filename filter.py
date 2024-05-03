@@ -32,6 +32,7 @@ class Filter:
             self.filter_log = filter_log
         else:
             self.filter_log = filter_log
+        self.isMember = True
         self.reset_results()
 
 
@@ -52,7 +53,7 @@ class Filter:
 
     # Message filter. Returns true if message contains anything illegal
     @filter_log.catch
-    def filter_response(self, text: str, username: str, attachments: str, isMember: bool = True) -> dict:
+    def filter_response(self, text: str, username: str, attachments: str, isMember: bool) -> dict:
         """
         Filter class method to filter provided text and/or attachments.
 
@@ -74,6 +75,9 @@ class Filter:
 
         self.filter_log.debug(f"================ Filter response ==================")
         self.filter_log.debug("# Filtering response")
+        # Set isMember
+        if isMember != None:
+            self.isMember = isMember
         # Attachments checks
         check_attachments_result = self.check_attachments(attachments, username)
         if check_attachments_result:
@@ -215,15 +219,12 @@ class Filter:
 
 
     @filter_log.catch
-    def check_for_suspicious_words(self, text_to_check, isMember) -> dict:
+    def check_for_suspicious_words(self, text_to_check) -> dict:
         """
         Filter class method to check text for suspicious words from according list.
 
         :type text_to_check: ``str``
         :param text_to_check: Text to check.
-
-        :type isMember: ``bool``
-        :param isMember: Is user member of the public.
 
         :return: Returns the result as dict.
         :rtype: ``dict``
@@ -245,7 +246,7 @@ class Filter:
                         res.append(f"{item} in {match}")
 
         result_len = len(res)
-        if not isMember: result_len += 1
+        if not self.isMember: result_len += 1
 
         if result_len >= max_points:
             msg = f"Suspicious '{res}' was found.\nMore than {max_points} suspicious words were found."
