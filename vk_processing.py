@@ -258,7 +258,7 @@ class VK_processing:
             username = username['text']
 
         vk_proc_log.debug(f"# New/edited comment: {message}; User: {username}")
-        filter_result = self.filter.filter_response(message, username, [])
+        filter_result = self.filter.filter_response(message, username, [], True)
         vk_proc_log.debug(f"# Filter result: {filter_result}")
         if filter_result['result'] == 1:
             vk_proc_log.info(f"# Comment to remove from {username}: '{message}'")
