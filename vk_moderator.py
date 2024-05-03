@@ -42,7 +42,7 @@ def main() -> None:
     # Telegram messages logging
     tg_params = {
         'token': Telegram.tlg_api.api_key,
-        'chat_id': Telegram.tlg_api.chat_id
+        'chat_id': Telegram.tlg_api.log_chat_id
     }
     tg_handler = NotificationHandler("telegram", defaults = tg_params)
     main_log = logger.bind(name = "main_log")
