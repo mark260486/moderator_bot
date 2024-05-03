@@ -1,4 +1,4 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 03, 2024
 
 from loguru import logger as tlg_proc_log
 from loguru import logger
@@ -92,14 +92,14 @@ class TLG_processing:
 
         msg = ""
         if not was_member and is_member:
-            msg = f"{Telegram.greeting_msg}"
+            msg = f"{Telegram.greeting_msg.replace("member_name", member_name)}"
         elif was_member and not is_member:
             if any(admin in cause_name for admin in Telegram.admin_ids):
-                msg = f"{Telegram.ban_msg}"
+                msg = f"{Telegram.ban_msg.replace("member_name", member_name).replace("cause_name", cause_name)}"
                 if "><" in member_name:
-                    msg = f"{Telegram.clear_msg}"
+                    msg = f"{Telegram.clear_msg.replace("cause_name", cause_name)}"
             else:
-                msg = f"{Telegram.leave_msg}"
+                msg = f"{Telegram.leave_msg.replace("member_name", member_name)}"
         tlg_proc_log.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
         await context.bot.send_message(Telegram.telegram_moderator.chat_id, msg, parse_mode = ParseMode.HTML)
 
