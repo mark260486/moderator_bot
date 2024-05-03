@@ -1,9 +1,9 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 03, 2024
 
 import time
 from loguru import logger as longpoll_log
 from loguru import logger
-from vk_api import VK_API
+from vk_api import VK_API, Groups
 from config import Logs, VK
 
 
@@ -30,6 +30,7 @@ class Longpoll:
 
         self.use_ssl = use_ssl
         self.vk = vk_api
+        self.vk_groups = Groups()
 
         if longpoll_log == None:
             if debug_enabled:
@@ -72,11 +73,11 @@ class Longpoll:
         if result['failed'] == 2:
             self.result['text'] = "[VK WARNING] API Key is deprecated. Need to get new with 'groups.getLongPollServer'"
             self.result['error'] = 0
-            self.vk.Groups.getLongPollServer()
+            self.vk_groups.getLongPollServer()
         if result['failed'] == 3:
             self.result['text'] = "[VK WARNING] Information is lost. Need to get new API Key and TS with 'groups.getLongPollServer'"
             self.result['error'] = 0
-            self.vk.Groups.getLongPollServer()
+            self.vk_groups.getLongPollServer()
         if self.result['text'] == "":
             self.result['text'] = "[GENERAL ERROR] Something went wrong during VK request managing!"
             self.result['error'] = 1
