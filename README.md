@@ -30,14 +30,14 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 
 #### Possible improvements
 
-* Autorestart bots with config.json changes;
+* Autorestart bots with config.py changes;
     + This should follow after params verifying;
 - Add logging with JSON;
-- All bots in one chat;
 - Add flag to log for new message if there was attachment;
 
 #### Telegram interactivity
 
+- Do I really need this functions?
 * Make menu button in Telegram to download bot logs;
     + Button - done;
     + Callback - no;
