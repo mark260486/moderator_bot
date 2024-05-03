@@ -27,7 +27,6 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 - Verify params from file;
 - Change suspicious words check procedure, too many false cases (send warning to Tlg?);
 - Refactor VK errors processing, especially for VK failure;
-- If the message was sent no by User in Group, then add this as point for suspisious points in Filter check;
 
 #### Possible improvements
 

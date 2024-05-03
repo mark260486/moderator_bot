@@ -1,4 +1,4 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 03, 2024
 
 from loguru import logger as vk_proc_log
 from loguru import logger
@@ -32,11 +32,14 @@ class VK_processing:
             self.vk_proc_log = vk_proc_log
         else:
             self.vk_proc_log = vk_proc_log
+
+        # Neccesary instances
         self.filter = Filter(debug_enabled = debug_enabled)
-        self.send_msg_to_vk = send_msg_to_vk
         self.vk_groups = Groups()
         self.vk_messages = Messages()
         self.vk_users = Users()
+
+        # Internal variables and options
         # Result = 0 - false
         # Result = 1 - true
         # Result = 2 - suspicious
@@ -45,6 +48,7 @@ class VK_processing:
             'text': "",
             'case': ""
         }
+        self.send_msg_to_vk = send_msg_to_vk
 
 
     @vk_proc_log.catch
@@ -85,7 +89,7 @@ class VK_processing:
 
 
     @vk_proc_log.catch
-    def filter_response_processing(self, message: str, username: str, group_id: int, isMember: dict,
+    def filter_response_processing(self, message: str, username: str, group_id: int, isMember: bool,
                                 peer_id: int = None, cm_id: int = None,
                                 attachments: dict = None, false_positive: bool = False) -> None:
         """
@@ -101,8 +105,8 @@ class VK_processing:
         :type group_id: ``int``
         :param group_id: Group ID.
 
-        :type isMember: ``dict``
-        :param isMember: Is user member of the public.
+        :type isMember: ``bool``
+        :param isMember: Is user member of the public. True by default.
 
         :type peer_id: ``int``
         :param peer_id: Peer ID. It is Int chat ID.
@@ -114,18 +118,19 @@ class VK_processing:
         :param attachments: Message attachments, if they are.
         """
 
-        filter_result = self.filter.filter_response(message, username, attachments)
+        filter_result = self.filter.filter_response(message, username, attachments, isMember)
         vk_proc_log.debug(f"============== Filter response processing =================")
         vk_proc_log.debug(f"# False positive: {false_positive}")
         vk_proc_log.debug(f"# Filter result: {filter_result}")
+
         # Exit if None
         if filter_result == None:
             return
+
         # If filter returns 0, we should wait for a couple of seconds.
         # Reason: there is no more ID for messages in public chat and we can't
         #    know if message was edited. So we wait for bad bot to edit message and then
         #    through VK API search messages get possibly redacted message and check it once again.
-        # ToDo: lookup for several messages and specify it as parameter.
         if filter_result['result'] == 0 and false_positive == False:
             vk_proc_log.debug(f"# Clear message, wait for {VK.check_delay} seconds and check it once more.")
             sleep(VK.check_delay)
@@ -140,6 +145,7 @@ class VK_processing:
             self.filter_response_processing(last_reply_msg, last_reply_username,
                                             group_id, isMember, last_reply_peer_id,
                                             last_reply_cm_id, last_reply_attachments, false_positive = True)
+
         # If filter returns 1 - we catch something
         if filter_result['result'] == 1:
             div = "-----------------------------"
@@ -164,13 +170,14 @@ class VK_processing:
             if self.send_msg_to_vk:
                 if send_result['error'] == 0:
                     vk_proc_log.info(f"# Service message was sent to {VK.chats[str(peer_id)]}")
+
         # If filter returns 2 - we should get warning to Telegram
         if filter_result['result'] == 2:
             div = "-----------------------------"
             msg_main = f"# Suspicious message from {username}: '{message}' was found."
             words = filter_result['text']
             case = f"# Case: {filter_result['case']}"
-            # This was made for avoid mess in msg
+            # This was made for avoid mess in msg var
             msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
             vk_proc_log.info(msg)
             if self.send_msg_to_vk:
@@ -196,9 +203,11 @@ class VK_processing:
         username = self.get_username(user_id)
         # Check if user is in Group. If not - it's suspicious
         vk_proc_log.debug(f"# Checking if User is in Group")
-        isMember = Groups.isMember(self.vk_groups, user_id = user_id, group_id = VK.vk_api.group_id)
-        if isMember['text'] == "0":
+        isMember = True
+        isMemberRes = Groups.isMember(self.vk_groups, user_id = user_id, group_id = VK.vk_api.group_id)
+        if isMemberRes['text'] == "0":
             vk_proc_log.info(f"# Message was sent by User not in Group")
+            isMember = False
 
         # Kick user notification
         if message == "" and attachments == "":

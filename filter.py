@@ -1,4 +1,4 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 03, 2024
 
 import re
 from loguru import logger as filter_log
@@ -52,7 +52,7 @@ class Filter:
 
     # Message filter. Returns true if message contains anything illegal
     @filter_log.catch
-    def filter_response(self, text: str, username: str, attachments: str) -> dict:
+    def filter_response(self, text: str, username: str, attachments: str, isMember: bool = True) -> dict:
         """
         Filter class method to filter provided text and/or attachments.
 
@@ -64,6 +64,9 @@ class Filter:
 
         :type attachments: ``str``
         :param attachments: Attachments to check.
+
+        :type isMember: ``bool``
+        :param isMember: Is user member of the public.
 
         :return: Returns the result as dictionary.
         :rtype: ``dict``
@@ -128,7 +131,20 @@ class Filter:
 
 
     @filter_log.catch
-    def check_text(self, text_to_check, username):
+    def check_text(self, text_to_check, username) -> dict:
+        """
+        Filter class method to check text.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :type username: ``str``
+        :param username: Username to check.
+
+        :return: Returns the result as dictionary.
+        :rtype: ``dict``
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text: {text_to_check}")
 
@@ -179,7 +195,17 @@ class Filter:
 
 
     @filter_log.catch
-    def check_for_english(self, text_to_check):
+    def check_for_english(self, text_to_check) -> bool:
+        """
+        Filter class method to check text for containing Latinic.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as boolean.
+        :rtype: ``bool``
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text for english")
         text_check = re.findall("[A-Za-z].+", text_to_check)
@@ -189,7 +215,20 @@ class Filter:
 
 
     @filter_log.catch
-    def check_for_suspicious_words(self, text_to_check):
+    def check_for_suspicious_words(self, text_to_check, isMember) -> dict:
+        """
+        Filter class method to check text for suspicious words from according list.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :type isMember: ``bool``
+        :param isMember: Is user member of the public.
+
+        :return: Returns the result as dict.
+        :rtype: ``dict``
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text for suspicious words")
         # If we have more than X words - kill it
@@ -204,27 +243,43 @@ class Filter:
                 for match in matches:
                     if not self.check_for_whitelist(match):
                         res.append(f"{item} in {match}")
-        if len(res) >= max_points:
+
+        result_len = len(res)
+        if not isMember: result_len += 1
+
+        if result_len >= max_points:
             msg = f"Suspicious '{res}' was found.\nMore than {max_points} suspicious words were found."
             self.filter_log.debug(f"# {msg}")
             self.result['result'] = 1
             self.result['text'] = msg
             self.result['case'] = "подозрительный набор слов, спам, реклама."
             return self.result
-        if len(res) > 0 and len(res) < max_points:
+
+        if result_len > 0 and result_len < max_points:
             msg = f"Suspicious '{res}' was found. Limit of {max_points} is not exceeded."
             self.filter_log.debug(f"# {msg}")
             self.result['result'] = 2
             self.result['text'] = msg
             self.result['case'] = "недостаточно подозрительных слов для удаления сообщения."
             return self.result
-        if len(res) == 0:
+
+        if result_len == 0:
             self.result['result'] = 0
             return self.result
 
 
     @filter_log.catch
-    def check_for_links(self, text_to_check):
+    def check_for_links(self, text_to_check) -> dict:
+        """
+        Filter class method to check text for links from Spam list.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as dictionary.
+        :rtype: ``dict``
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text for links")
         for item in Words_DB.blacklists.spam_list:
@@ -240,7 +295,17 @@ class Filter:
 
 
     @filter_log.catch
-    def check_for_curses(self, text_to_check):
+    def check_for_curses(self, text_to_check) -> dict:
+        """
+        Filter class method to check text for Curses from according list.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as dictionary.
+        :rtype: ``dict``
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text for curses")
         text_to_check.replace('ё', 'е')
@@ -278,6 +343,16 @@ class Filter:
 
     @filter_log.catch
     def check_for_whitelist(self, text_to_check):
+        """
+        Filter class method to verify possible false cases of Curses check.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as boolean.
+        :rtype: ``bool``
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text for whitelist")
         for item in Words_DB.whitelist:
@@ -291,6 +366,15 @@ class Filter:
 
     @filter_log.catch
     def check_for_phone(self, text_to_check):
+        """
+        Filter class method to check text for Phone numbers.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as Regex match group or None.
+        """
+
         self.reset_results()
         self.filter_log.debug(f"# Checking text for phones")
         pattern = r'\+\d+([!\s\(-_]?)+\d+([!\s\)-_]?)+\d+([ _-]?)+\d+([ _-]?)+\d'
