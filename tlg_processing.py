@@ -101,7 +101,7 @@ class TLG_processing:
             else:
                 msg = f"{Telegram.leave_msg.replace("member_name", member_name)}"
         tlg_proc_log.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
-        await context.bot.send_message(Telegram.telegram_moderator.chat_id, msg, parse_mode = ParseMode.HTML)
+        await context.bot.send_message(Telegram.tlg_api.chat_id, msg, parse_mode = ParseMode.HTML)
 
 
     @tlg_proc_log.catch
@@ -111,7 +111,7 @@ class TLG_processing:
             reason = check_text_result['case']
 
             await context.bot.delete_message(chat_id, message_id)
-            await context.bot.send_message(Telegram.telegram_moderator.chat_id,
+            await context.bot.send_message(Telegram.tlg_api.chat_id,
                                            f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
 
 
@@ -151,7 +151,7 @@ class TLG_processing:
                 tlg_proc_log.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
                 await context.bot.delete_message(chat_id, message_id)
                 await context.bot.send_message(
-                    Telegram.telegram_moderator.chat_id, 
+                    Telegram.tlg_api.chat_id, 
                     f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: подозрительная ссылка."
                     )
 

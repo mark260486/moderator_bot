@@ -41,8 +41,8 @@ def main() -> None:
         logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
     # Telegram messages logging
     tg_params = {
-        'token': Telegram.vk_moderator.api_key,
-        'chat_id': Telegram.vk_moderator.chat_id
+        'token': Telegram.tlg_api.api_key,
+        'chat_id': Telegram.tlg_api.chat_id
     }
     tg_handler = NotificationHandler("telegram", defaults = tg_params)
     main_log = logger.bind(name = "main_log")

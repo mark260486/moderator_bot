@@ -36,8 +36,8 @@ def main() -> None:
 
     # Telegram messages logging
     tg_params = {
-        'token': Telegram.telegram_moderator.api_key,
-        'chat_id': Telegram.telegram_moderator.log_chat_id
+        'token': Telegram.tlg_api.api_key,
+        'chat_id': Telegram.tlg_api.log_chat_id
     }
     tg_handler = NotificationHandler("telegram", defaults = tg_params)
     logger.add(tg_handler, format = "{message}", level = "INFO")
@@ -49,7 +49,7 @@ def main() -> None:
     proc = TLG_processing(debug_enabled = args.debug_enabled)
 
     # Apply TLG token
-    app = Application.builder().token( Telegram.telegram_moderator.api_key).build()
+    app = Application.builder().token(Telegram.tlg_api.api_key).build()
 
     # On non command i.e message - moderate message content
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, proc.moderate_message))
