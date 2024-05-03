@@ -1,3 +1,5 @@
+# Reviewed: May 03, 2024
+
 
 class VK:
     class vk_longpoll:
@@ -17,28 +19,25 @@ class VK:
     errors_limit = 3
     wait_period = 10
     check_delay = 10
-    messages_search_count = 1
+    messages_search_count = 3
     public_name = "Самый лучший паблик"
 
 class Telegram:
-    class telegram_moderator:
-        api_key = "TLG_API_KEY"
-        chat_id = "-000"
-        log_chat_id = "000"
-        api_url = "https://api.telegram.org/botTLG_KEY/sendMessage"
-    class vk_moderator:
-        api_key = "TLG_API_KEY"
-        chat_id = "000"
+    class tlg_api:
+        api_key = "000000:API_KEY_000"
+        chat_id = "-000000"  # Telegram Chat to moderate.
+        log_chat_id = "000000"   # Your Telegram ID to get messages from Moderator Bot.
         api_url = "https://api.telegram.org/botTLG_KEY/sendMessage"
 
-     # Variables member_name and cause_name are internal Telegram API return values.
+    # # # Messages for Telegram Chat.
+    # Variables member_name and cause_name are internal Telegram API return values.
     # cause_name is in admin actions.
     # member_name are both in admin and user actions.
-    # admin_ids are for personal IDs of the Telegram Chat to split users and Admins in script logic.
     greeting_msg = "К нам присоединяется member_name."
     ban_msg = "Администратор cause_name вышвыривает member_name. Земля ему стекловатой."
     clear_msg = "Администратор cause_name убирает из подписчиков 'Удалённый аккаунт'."
     leave_msg = "member_name покинул канал. Удачи!"
+    # admin_ids are for personal IDs of the Telegram Chat to split users and Admins in script logic.
     admin_ids = ["0000"]
     log_path = "/var/log/moderator_bot/tlg_moderator.log"
     service_name = "tlg_moderator"
