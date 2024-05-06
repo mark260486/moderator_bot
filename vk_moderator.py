@@ -1,10 +1,9 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 06, 2024
 
 import argparse
 from loguru import logger
 from notifiers.logging import NotificationHandler
 from vk_api import VK_API, Groups
-from longpoll import Longpoll
 from vk_processing import VK_processing
 from config import VK, Telegram
 
@@ -20,9 +19,11 @@ def main() -> None:
     parser.add_argument("-d", "--debug", dest = "debug_enabled", action = "store_true",
                         default = False,
                         required = False)
-    parser.add_argument("-s", "--send_msg",
-                        dest = "send_msg_to_vk",
-                        action = "store_true",
+    parser.add_argument("-t", "--tlg", dest = "send_msg_to_tlg", action = "store_true",
+                        help = "Send Notification message to moderator Telegram Chat",
+                        default = False,
+                        required = False)
+    parser.add_argument("-s", "--send_msg", dest = "send_msg_to_vk", action = "store_true",
                         help = "Send Notification message to VK Chat about Message removal or error",
                         default = False,
                         required = False)
@@ -39,29 +40,31 @@ def main() -> None:
         logger.debug("# VK moderator will run in Debug mode.")
     else:
         logger.add(main_log_file, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
-    # Telegram messages logging
-    tg_params = {
-        'token': Telegram.tlg_api.api_key,
-        'chat_id': Telegram.tlg_api.log_chat_id
-    }
-    tg_handler = NotificationHandler("telegram", defaults = tg_params)
     main_log = logger.bind(name = "main_log")
-    main_log.add(tg_handler, format = "{message}", level = "INFO")
+
+    # Telegram messages logging
+    if args.send_msg_to_tlg:
+        tg_params = {
+            'token': Telegram.tlg_api.api_key,
+            'chat_id': Telegram.tlg_api.log_chat_id
+        }
+        tg_handler = NotificationHandler("telegram", defaults = tg_params)
+        main_log.add(tg_handler, format = "{message}", level = "INFO")
+    
     main_log.info(f"# VK Moderator bot is (re)starting...")
 
     # # # # Start VK longpoll # # # #
-    vk = VK_API(debug_enabled = args.debug_enabled)
-    longpoll = Longpoll(vk, debug_enabled = args.debug_enabled)
+    vk_groups = Groups()
     proc = VK_processing(debug_enabled = args.debug_enabled, send_msg_to_vk = args.send_msg_to_vk)
 
     # Get longpoll server parameters
     main_log.debug("# Get LongPoll server parameters to listen")
-    result = Groups.getLongPollServer(vk)
+    result = vk_groups.getLongPollServer()
     if result['error'] != 1:
-        main_log.debug("# LongPoll server parameters were received")
+        main_log.debug(f"# {result['text']}")
         while True:
             # Listening
-            longpoll_result = longpoll.listen_longpoll()
+            longpoll_result = vk_groups.process_longpoll_response()
             if longpoll_result['error'] == 1:
                 main_log.info("# Bot has stopped")
                 # In case of error - break glass

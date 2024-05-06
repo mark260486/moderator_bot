@@ -1,7 +1,7 @@
-# Reviewed: May 03, 2024
+# Reviewed: May 06, 2024
 
-from loguru import logger as vk_proc_log
 from loguru import logger
+from loguru import logger as vk_proc_log
 from vk_api import Messages, Users, Groups
 from filter import Filter
 from time import sleep
@@ -80,7 +80,7 @@ class VK_processing:
         :type user_id: ``int``
         :param user_id: User ID.
         """
-        username = Users.get(self.vk_users, user_id = user_id)
+        username = self.vk_users.get(user_id = user_id)
         if username['error'] == 1:
             vk_proc_log.error(f"# Can't get username from ID: {username['text']}")
             return "Can't get username"
@@ -135,7 +135,7 @@ class VK_processing:
             vk_proc_log.debug(f"# Clear message, wait for {VK.check_delay} seconds and check it once more.")
             sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
-            last_reply = Messages.search(self.vk_messages, group_id, peer_id, VK.messages_search_count)['text']
+            last_reply = self.vk_messages.search(group_id, peer_id, VK.messages_search_count)['text']
             vk_proc_log.debug(f"# Last reply: {last_reply}")
             last_reply_msg = last_reply['items'][0]['text']
             last_reply_username = self.get_username(user_id = last_reply['items'][0]['from_id'])
@@ -155,17 +155,17 @@ class VK_processing:
             msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
             vk_proc_log.info(msg)
             vk_proc_log.debug(f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}")
-            delete_result = Messages.delete(self.vk_messages, group_id, cm_id, peer_id)
+            delete_result = self.vk_messages.delete(group_id, cm_id, peer_id)
             vk_proc_log.debug(f"# Delete result: {delete_result['text']}")
 
             if delete_result['error'] == 0:
                 vk_proc_log.info("# Message was removed")
                 if self.send_msg_to_vk:
-                    send_result = Messages.send(self.vk_messages, f"Сообщение от {username} было удалено автоматическим фильтром. Причина: {filter_result['case']}", group_id, peer_id)
+                    send_result = self.vk_messages.send(f"Сообщение от {username} было удалено автоматическим фильтром. Причина: {filter_result['case']}", group_id, peer_id)
             else:
                 vk_proc_log.info("# Message was not removed")
                 if self.send_msg_to_vk:
-                    send_result = Messages.send(self.vk_messages, f"# Сообщение от {username} не было удалено автоматическим фильтром.", group_id, peer_id)
+                    send_result = self.vk_messages.send(f"# Сообщение от {username} не было удалено автоматическим фильтром.", group_id, peer_id)
 
             if self.send_msg_to_vk:
                 if send_result['error'] == 0:
@@ -204,7 +204,7 @@ class VK_processing:
         # Check if user is in Group. If not - it's suspicious
         vk_proc_log.debug(f"# Checking if User is in Group")
         isMember = True
-        isMemberRes = Groups.isMember(self.vk_groups, user_id = user_id, group_id = VK.vk_api.group_id)
+        isMemberRes = self.vk_groups.isMember(user_id = user_id, group_id = VK.vk_api.group_id)
         if isMemberRes['text'] == "0":
             vk_proc_log.info(f"# Message was sent by User not in Group")
             isMember = False
@@ -218,7 +218,7 @@ class VK_processing:
             if action_type != "":
                 if action_type == "chat_kick_user":
                     kicked_user_id = response['updates'][0]['object']['message']['action']['member_id']
-                    kicked_username = Users.get(self.vk_users, kicked_user_id)
+                    kicked_username = self.vk_users.get(kicked_user_id)
                     if kicked_username['error'] == 1:
                         vk_proc_log.error(f"# Can't get username from ID: {kicked_username['text']}")
                     else:
@@ -250,7 +250,7 @@ class VK_processing:
         vk_proc_log.debug("# Processing comment")
         message = self.replacements(response['updates'][0]['object']['text'])
         user_id = response['updates'][0]['object']['from_id']
-        username = Users.get(self.vk_users, user_id)
+        username = self.vk_users.get(user_id)
         if username['error'] == 1:
             vk_proc_log.error(f"# Can't get username from ID: {username['text']}")
             return False

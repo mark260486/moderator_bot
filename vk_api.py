@@ -1,10 +1,11 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 06, 2024
 
 import random
 import requests
 import json
-from loguru import logger as vk_api_log
+import time
 from loguru import logger
+from loguru import logger as vk_api_log
 from datetime import datetime, timedelta
 from config import VK
 
@@ -25,15 +26,12 @@ class VK_API:
         """
 
         self.use_ssl = use_ssl
-        self.lp_key = ""
-        self.lp_ts = 0
-        self.lp_server = ""
-        self.lp_wait = VK.vk_longpoll.wait
         self.vk_api_url = VK.vk_api.api_url
         self.result = {
             'text': '',
             'error': 0
         }
+
         if vk_api_log == None:
             if debug_enabled:
                 vk_api_log.add(VK.log_path, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -73,8 +71,8 @@ class VK_API:
         :rtype: ``dict``
         """
 
-        self.vk_api_log.debug(f"============== Do request ================")
-        self.vk_api_log.debug(f"# Requesting for: {url}")
+        vk_api_log.debug(f"============== Do request ================")
+        vk_api_log.debug(f"# Requesting for: {url}")
         try:
             response = requests.request(
                 method,
@@ -89,12 +87,12 @@ class VK_API:
                 requests.HTTPError,
                 requests.Timeout) as e:
             msg = f"# Error occure during the request: {str(e)}"
-            self.vk_api_log.error(msg)
+            vk_api_log.error(msg)
             return msg
         try:
-            self.vk_api_log.debug(f"# Request result: {response}")
+            vk_api_log.debug(f"# Request result: {response}")
             res = json.loads(response.text)
-            self.vk_api_log.debug(f"# Response text: {res}")
+            vk_api_log.debug(f"# Response text: {res}")
             return res
         except ValueError as exception:
             msg = f"# Failed to parse json object from response. Exception: {exception}"
@@ -111,28 +109,6 @@ class VK_API:
             'text': '',
             'error': 0
         }
-
-
-    # GET request to VK LongPoll API to listen for messages
-    @vk_api_log.catch
-    def listen_longpoll(self) -> dict:
-        """
-        VK API class method to listen VK LongPoll response.
-
-        :return: Returns the request result.
-        :rtype: ``dict``
-        """
-
-        # Form request params
-        payload = {
-            'act': 'a_check',
-            'key': self.lp_key,
-            'ts': self.lp_ts,
-            'wait': self.lp_wait
-        }
-
-        response = self.do_request('GET', self.lp_server, params = payload, use_ssl = self.use_ssl)
-        return response
 
 
 class Users(VK_API):
@@ -183,13 +159,21 @@ class Users(VK_API):
 
 
 class Groups(VK_API):
-    def __init__(self):
+    def __init__(self, use_ssl: bool = True):
         """
         VK API Groups subclass init
 
         :return: Returns the class instance.
         """
-        super().__init__()
+
+        super(VK_API, self).__init__()
+        # Longpoll params init
+        self.lp_key = ""
+        self.lp_ts = 0
+        self.lp_server = ""
+        self.lp_wait = VK.vk_longpoll.wait
+        self.use_ssl = use_ssl
+        self.vk_api_url = VK.vk_api.api_url
 
 
     @vk_api_log.catch
@@ -259,8 +243,151 @@ class Groups(VK_API):
                 self.result['text'] = "Cannot get neccessary keys from VK API response."
                 self.result['error'] = 1
             return self.result
-        self.lp_server, self.lp_key, self.lp_ts = response['response']['server'], response['response']['key'], response['response']['ts']
+        self.lp_server = response['response']['server']
+        self.lp_key = response['response']['key']
+        self.lp_ts = response['response']['ts']
         self.result['text'] = "Longpoll server parameters were received"
+        return self.result
+
+
+# GET request to VK LongPoll API to listen for messages
+    @vk_api_log.catch
+    def listen_longpoll(self) -> dict:
+        """
+        Longpoll subclass method to listen VK LongPoll response.
+
+        :return: Returns the request result.
+        :rtype: ``dict``
+        """
+
+        # Form request params
+        payload = {
+            'act': 'a_check',
+            'key': self.lp_key,
+            'ts': self.lp_ts,
+            'wait': VK.vk_longpoll.wait
+        }
+
+        response = self.do_request('GET', self.lp_server, params = payload, use_ssl = self.use_ssl)
+        return response
+
+
+    # Listen to VK Longpoll server and manage results
+    @vk_api_log.catch
+    def process_longpoll_response(self) -> dict:
+        """
+        Longpoll subclass method to listen VK LongPoll server response.
+
+        :return: Returns the result of VK LongPoll request.
+        :rtype: ``dict``
+        """
+
+        # # Errors counter for warnings.
+        # +1 if warning was received (e.g. API key deprecated)
+        # reset if next request is OK
+        errors_limit = VK.errors_limit
+        wait_period = VK.wait_period
+        vk_api_log.debug("# Start to listen LongPoll API. Errors counter was resetted")
+        longpoll = {
+            'errors_counter': 0,
+            'response': '',
+            'response_type': '',
+            'error': 0
+        }
+        response = self.listen_longpoll()
+        # If there is error in VK Longpoll response - process
+        vk_api_log.debug(f"# Longpoll API response: {response}")
+        if 'Error' in response:
+            longpoll['errors_counter'] += 1
+            vk_api_log.info(f"# Errors counter: {longpoll['errors_counter']}")
+            vk_api_log.warning(f"# {response}")
+            if longpoll['errors_counter'] == errors_limit:
+                msg = "# Errors limit is over. Shut down."
+                vk_api_log.error(msg)
+                longpoll['response'] = msg
+                longpoll['error'] = 1
+                return longpoll
+            time.sleep(wait_period)
+            return longpoll
+        if 'failed' in response:
+            process_result = self.process_longpoll_errors(response)
+            # Result contains tuple: True/False, error message to log
+            if process_result['error'] == 0:
+                # In case of warning we count to ERRORS_LIMIT and then stop
+                longpoll['errors_counter'] += 1
+                vk_api_log.debug(process_result['text'])
+                vk_api_log.debug(f"# Errors counter: {longpoll['errors_counter']}")
+                if longpoll['errors_counter'] == errors_limit:
+                    msg = "# Errors limit is over. Shut down."
+                    vk_api_log.error(msg)
+                    longpoll['response'] = msg
+                    longpoll['error'] = 1
+                    return longpoll
+                time.sleep(wait_period)
+                return longpoll
+            else:
+                msg = f"# Critical error. {process_result['text']}"
+                vk_api_log.error(msg)
+                longpoll['response'] = msg
+                longpoll['error'] = 1
+                return longpoll
+        else:
+            vk_api_log.debug("# No failures in response. Errors counter was resetted")
+            longpoll['errors_counter'] = 0
+            if response['updates'] == []:
+                vk_api_log.debug("# Listening interval passed, nothing new. Proceeding...")
+                return longpoll
+            # Process response with message
+            self.lp_ts = response['ts']
+
+            # If this is new/edited comment
+            if response['updates'][0]['type'] == "wall_reply_new" or \
+            response['updates'][0]['type'] == "wall_reply_edit" or \
+            response['updates'][0]['type'] == "photo_comment_new" or \
+            response['updates'][0]['type'] == "photo_comment_edit":
+                longpoll['response'] = response
+                longpoll['response_type'] = "comment"
+                return longpoll
+
+            # If this is new message
+            if response['updates'][0]['type'] == "message_new":
+                longpoll['response'] = response
+                longpoll['response_type'] = "message"
+                return longpoll
+            return longpoll
+
+
+    @vk_api_log.catch
+    def process_longpoll_errors(self, result: dict) -> dict:
+        """
+        Longpoll subclass method to process VK LongPoll server response.
+
+        :type result: ``dict``
+        :param result: Dictionary with VK LongPoll request results.
+
+        :return: Returns the result of processing.
+        :rtype: ``dict``
+        """
+
+        self.vk_api_log.debug(f"# Processing Longpoll error: {result}")
+        if result['failed'] == 1:
+            self.result['text'] = f"[VK WARNING] Event history is deprecated or lost. New TS provided: {result['ts']}."
+            self.result['error'] = 0
+            self.lp_ts = result['ts']
+        if result['failed'] == 2:
+            self.result['text'] = "[VK WARNING] API Key is deprecated. Need to get new with 'groups.getLongPollServer'."
+            self.result['error'] = 0
+            Groups.getLongPollServer()
+        if result['failed'] == 3:
+            self.result['text'] = "[VK WARNING] Information is lost. Need to get new API Key and TS with 'groups.getLongPollServer'."
+            self.result['error'] = 0
+        if result['failed'] == 4:
+            self.result['text'] = "[VK WARNING] Incorrect version of VK API was passed."
+            self.result['error'] = 0
+            Groups.getLongPollServer()
+        if self.result['text'] == "":
+            self.result['text'] = "[GENERAL ERROR] Something went wrong during VK request managing."
+            self.result['error'] = 1
         return self.result
 
 
@@ -364,7 +491,6 @@ class Messages(VK_API):
             return self.result
         self.result['text'] = response['response']
         return self.result
-
 
 
     @vk_api_log.catch
