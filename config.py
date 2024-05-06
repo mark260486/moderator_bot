@@ -33,7 +33,7 @@ class Telegram:
     # Variables member_name and cause_name are internal Telegram API return values.
     # cause_name is in admin actions.
     # member_name are both in admin and user actions.
-    greeting_msg = "К нам присоединяется member_name."
+    greeting_msg = "К нам присоединяется member_name.\nДобро пожаловать!"
     ban_msg = "Администратор cause_name вышвыривает member_name. Земля ему стекловатой."
     clear_msg = "Администратор cause_name убирает из подписчиков 'Удалённый аккаунт'."
     leave_msg = "member_name покинул канал. Удачи!"

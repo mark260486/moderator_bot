@@ -21,6 +21,10 @@ def main() -> None:
     parser.add_argument("-d", "--debug", dest = "debug_enabled",
                         action = "store_true", default = False,
                         required = False)
+    parser.add_argument("-t", "--tlg", dest = "send_msg_to_tlg", action = "store_true",
+                        help = "Send Notification message to moderator Telegram Chat",
+                        default = False,
+                        required = False)
     args = parser.parse_args()
 
     # # # # Logger settings # # # #
@@ -35,12 +39,13 @@ def main() -> None:
         logger.add(Telegram.log_path, level="INFO", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", rotation = "10 MB")
 
     # Telegram messages logging
-    tg_params = {
-        'token': Telegram.tlg_api.api_key,
-        'chat_id': Telegram.tlg_api.log_chat_id
-    }
-    tg_handler = NotificationHandler("telegram", defaults = tg_params)
-    logger.add(tg_handler, format = "{message}", level = "INFO")
+    if args.send_msg_to_tlg:
+        tg_params = {
+            'token': Telegram.tlg_api.api_key,
+            'chat_id': Telegram.tlg_api.log_chat_id
+        }
+        tg_handler = NotificationHandler("telegram", defaults = tg_params)
+        logger.add(tg_handler, format = "{message}", level = "INFO")
 
     logger.info("Telegram moderator bot listener re/starting..")
 

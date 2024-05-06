@@ -89,6 +89,7 @@ class TLG_processing:
         was_member, is_member = result
         cause_name = update.chat_member.from_user.mention_html()
         member_name = update.chat_member.new_chat_member.user.mention_html()
+        chat_id = update.message.chat.id
 
         msg = ""
         if not was_member and is_member:
@@ -101,7 +102,7 @@ class TLG_processing:
             else:
                 msg = Telegram.leave_msg.replace("member_name", member_name)
         tlg_proc_log.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
-        await context.bot.send_message(Telegram.tlg_api.chat_id, msg, parse_mode = ParseMode.HTML)
+        await context.bot.send_message(chat_id, msg, parse_mode = ParseMode.HTML)
 
 
     @tlg_proc_log.catch
@@ -111,8 +112,8 @@ class TLG_processing:
             reason = check_text_result['case']
 
             await context.bot.delete_message(chat_id, message_id)
-            await context.bot.send_message(Telegram.tlg_api.chat_id,
-                                           f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
+            await context.bot.send_message(chat_id,
+                f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
 
 
     @tlg_proc_log.catch
@@ -148,10 +149,11 @@ class TLG_processing:
 
             tlg_proc_log.debug(f"# Filter result: {check_url_result}")
             if check_url_result['result'] == 1:
+                chat_id = update.message.chat.id
                 tlg_proc_log.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
                 await context.bot.delete_message(chat_id, message_id)
                 await context.bot.send_message(
-                    Telegram.tlg_api.chat_id, 
+                    chat_id,
                     f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: подозрительная ссылка."
                     )
 
@@ -180,4 +182,5 @@ class TLG_processing:
 
         tlg_proc_log.debug(f"# Filter result: {check_text_result}")
         if check_text_result:
+            chat_id = update.message.chat.id
             await self.notify_and_remove(check_text_result, chat_id, message_id, context)
