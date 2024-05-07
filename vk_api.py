@@ -1,4 +1,4 @@
-# Reviewed: May 06, 2024
+# Reviewed: May 07, 2024
 
 import random
 import requests
@@ -369,7 +369,7 @@ class Groups(VK_API):
         :rtype: ``dict``
         """
 
-        self.vk_api_log.debug(f"# Processing Longpoll error: {result}")
+        vk_api_log.debug(f"# Processing Longpoll error: {result}")
         if result['failed'] == 1:
             self.result['text'] = f"[VK WARNING] Event history is deprecated or lost. New TS provided: {result['ts']}."
             self.result['error'] = 0
