@@ -1,9 +1,9 @@
-# Reviewed: May 06, 2024
+# Reviewed: May 07, 2024
 
 import argparse
 from loguru import logger
 from notifiers.logging import NotificationHandler
-from vk_api import VK_API, Groups
+from vk_api import Longpoll
 from vk_processing import VK_processing
 from config import VK, Telegram
 
@@ -54,28 +54,21 @@ def main() -> None:
     main_log.info(f"# VK Moderator bot is (re)starting...")
 
     # # # # Start VK longpoll # # # #
-    vk_groups = Groups()
+    vk_longpoll = Longpoll()
     proc = VK_processing(debug_enabled = args.debug_enabled, send_msg_to_vk = args.send_msg_to_vk)
 
-    # Get longpoll server parameters
-    main_log.debug("# Get LongPoll server parameters to listen")
-    result = vk_groups.getLongPollServer()
-    if result['error'] != 1:
-        main_log.debug(f"# {result['text']}")
-        while True:
-            # Listening
-            longpoll_result = vk_groups.process_longpoll_response()
-            if longpoll_result['error'] == 1:
-                main_log.info("# Bot has stopped")
-                # In case of error - break glass
-                break
-            if longpoll_result['response_type'] != "":
-                response_type = longpoll_result['response_type']
-                # Response type, like 'message' or 'comment' will call according function from Processing
-                function_to_call = getattr(proc, response_type)
-                function_to_call(response = longpoll_result['response'])
-    else:
-        main_log.error(f"# Get Longpoll server parameters error. {result['text']}")
+    while True:
+        # Listening
+        longpoll_result = vk_longpoll.process_longpoll_response()
+        if longpoll_result['error'] == 1:
+            main_log.info("# Bot has stopped")
+            # In case of error - break glass
+            break
+        if longpoll_result['response_type'] != "":
+            response_type = longpoll_result['response_type']
+            # Response type, like 'message' or 'comment' will call according function from Processing
+            function_to_call = getattr(proc, response_type)
+            function_to_call(response = longpoll_result['response'])
 
 
 if __name__ == '__main__':
