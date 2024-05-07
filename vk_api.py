@@ -377,14 +377,14 @@ class Groups(VK_API):
         if result['failed'] == 2:
             self.result['text'] = "[VK WARNING] API Key is deprecated. Need to get new with 'groups.getLongPollServer'."
             self.result['error'] = 0
-            Groups.getLongPollServer()
+            self.getLongPollServer()
         if result['failed'] == 3:
             self.result['text'] = "[VK WARNING] Information is lost. Need to get new API Key and TS with 'groups.getLongPollServer'."
             self.result['error'] = 0
         if result['failed'] == 4:
             self.result['text'] = "[VK WARNING] Incorrect version of VK API was passed."
             self.result['error'] = 0
-            Groups.getLongPollServer()
+            self.getLongPollServer()
         if self.result['text'] == "":
             self.result['text'] = "[GENERAL ERROR] Something went wrong during VK request managing."
             self.result['error'] = 1
