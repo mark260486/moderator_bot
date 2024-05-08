@@ -1,4 +1,4 @@
-# Reviewed: May 06, 2024
+# Reviewed: May 08, 2024
 
 from loguru import logger
 from loguru import logger as vk_proc_log
@@ -131,7 +131,7 @@ class VK_processing:
         # Reason: there is no more ID for messages in public chat and we can't
         #    know if message was edited. So we wait for bad bot to edit message and then
         #    through VK API search messages get possibly redacted message and check it once again.
-        if filter_result['result'] == 0 and false_positive == False:
+        if filter_result['result'] in [0, 2] and false_positive == False:
             vk_proc_log.debug(f"# Clear message, wait for {VK.check_delay} seconds and check it once more.")
             sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
