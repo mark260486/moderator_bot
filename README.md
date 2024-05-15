@@ -46,7 +46,7 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
 #### Tests and researches
 
 * Try to replace my own VK API module with https://vk-api.readthedocs.io/en/latest/index.html Pypi module;
-    + Playing with VK Wave module;
+    + Playing with VK Wave module - doesn't work with edited messages;
 - Add comment remove function to VK API;
 - Make different wait periods for different errors at VK API request;
 * Make tests about user kick;
@@ -58,5 +58,5 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
     + implement class/functions to work with DB;
     + implement limit to removed messages to get banned;
     + implement Telegram menu buttons to work with DB;
-- Maybe it is worth to make all bot async;
+- Maybe it is worth to make all bot async - in progress;
 - Implement web UI for bot management.

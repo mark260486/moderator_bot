@@ -1,4 +1,4 @@
-# Reviewed: May 03, 2024
+# Reviewed: May 15, 2024
 
 from loguru import logger as tlg_proc_log
 from loguru import logger
@@ -10,15 +10,8 @@ from typing import Optional, Tuple
 from config import Telegram, Logs
 
 
-text = ""
-caption = ""
-first_name = ""
-username = ""
-urls = []
-
-
 class TLG_processing:
-    def __init__(self, tlg_proc_log: logger = tlg_proc_log, debug_enabled: bool = False) -> None: # type: ignore
+    def __init__(self, tlg_proc_log: logger = tlg_proc_log, debug_enabled: bool = False) -> None:  # type: ignore
         """
         Telegram Processing class init
 
@@ -31,7 +24,7 @@ class TLG_processing:
         :return: Returns the class instance.
         """
 
-        if tlg_proc_log == None:
+        if tlg_proc_log is None:
             tlg_proc_log.remove()
             if debug_enabled:
                 tlg_proc_log.add(Logs.processing_log, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
@@ -50,7 +43,6 @@ class TLG_processing:
             'text': "",
             'case': ""
         }
-
 
     @tlg_proc_log.catch
     def extract_status_change(self, chat_member_update: ChatMemberUpdated) -> Optional[Tuple[bool, bool]]:
@@ -78,7 +70,6 @@ class TLG_processing:
 
         return was_member, is_member
 
-
     @tlg_proc_log.catch
     async def greet_chat_members(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Greets new users in chats and announces when someone leaves"""
@@ -87,34 +78,47 @@ class TLG_processing:
             return
 
         was_member, is_member = result
+        was_muted = False
+        if update.chat_member.old_chat_member.status == ChatMember.MEMBER:
+            was_muted = True
         cause_name = update.chat_member.from_user.mention_html()
         member_name = update.chat_member.new_chat_member.user.mention_html()
-        chat_id = update.message.chat.id
+
+        tlg_proc_log.info(update)
+        chat_id = update.chat_member.chat.id
 
         msg = ""
+        # Greeting message
         if not was_member and is_member:
             msg = Telegram.greeting_msg.replace("member_name", member_name)
         elif was_member and not is_member:
             if any(admin in cause_name for admin in Telegram.admin_ids):
+                # Ban message
                 msg = Telegram.ban_msg.replace("member_name", member_name).replace("cause_name", cause_name)
+                # Remove "Deleted account" message
                 if "><" in member_name:
                     msg = Telegram.clear_msg.replace("cause_name", cause_name)
             else:
+                # Leave message
                 msg = Telegram.leave_msg.replace("member_name", member_name)
+        # Mute message
+        elif was_member and is_member and was_muted:
+            msg = Telegram.mute_msg.replace("member_name", member_name)
+        # Unmute message
+        elif was_member and is_member and not was_muted:
+            msg = Telegram.unmute_msg.replace("member_name", member_name)
         tlg_proc_log.debug(f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}")
         await context.bot.send_message(chat_id, msg, parse_mode = ParseMode.HTML)
 
-
     @tlg_proc_log.catch
-    async def notify_and_remove(self, check_text_result, chat_id, message_id, context: ContextTypes.DEFAULT_TYPE):
-        if check_text_result['result'] == 1:
-            tlg_proc_log.info(f"Message to remove from {first_name}(@{username}): '{text.replace('.', '[.]')}'")
-            reason = check_text_result['case']
+    async def notify_and_remove(self, check_result, message, context: ContextTypes.DEFAULT_TYPE):
+        tlg_proc_log.info(f"Message to remove from {message.from_user.first_name}(@{message.from_user.username}): '{check_result['text'].replace('.', '[.]')}'")
 
-            await context.bot.delete_message(chat_id, message_id)
-            await context.bot.send_message(chat_id,
-                f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: {reason}")
-
+        await context.bot.delete_message(message.chat_id, message.message_id)
+        await context.bot.send_message(
+            message.chat_id,
+            f"Сообщение от {message.from_user.first_name}(@{message.from_user.username}) было удалено автоматическим фильтром. \
+                Причина: {check_result['reason']}")
 
     @tlg_proc_log.catch
     async def moderate_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -123,64 +127,43 @@ class TLG_processing:
         res = update.to_dict()
         tlg_proc_log.debug(f"# Update: {res}")
 
-        # Reset globals for future check
-        global text, caption, first_name, username
-        text = ""
-        caption = ""
-        first_name = ""
-        username = ""
         urls = []
+        message = update.message or update.edited_message
 
-        message_key = ""
-        if "edited_message" in res:
-            message_key = "edited_message"
-        else:
-            message_key = "message"
+        if message:
+            if message.entities:
+                for entity in message.entities:
+                    urls.append(entity.url)
 
-        if "entities" in res[message_key]:
-            for entity in res[message_key]['entities']:
-                try:
-                    urls.append(entity['url'])
-                except: None
+            if urls != []:
+                for url in urls:
+                    check_url_result = self.filter.check_for_links(url)
 
-        if urls != []:
-            for url in urls:
-                check_url_result = self.filter.check_for_links(url)
+                tlg_proc_log.debug(f"# Filter result: {check_url_result}")
+                if check_url_result['result'] == 1:
+                    tlg_proc_log.info(f"Message to remove from {message.from_user.first_name}(@{message.from_user.username})\n \
+                                    '{check_url_result['text'].replace('.', '[.]')}'")
+                    await context.bot.delete_message(message.chat.id, message.message_id)
+                    await context.bot.send_message(
+                        message.chat_id,
+                        f"Сообщение от {message.from_user.first_name}(@{message.from_user.username}) \
+                            было удалено автоматическим фильтром. Причина: подозрительная ссылка.")
 
-            tlg_proc_log.debug(f"# Filter result: {check_url_result}")
-            if check_url_result['result'] == 1:
-                chat_id = update.message.chat.id
-                tlg_proc_log.info(f"Message to remove from {first_name}(@{username})\n'{text.replace('.', '[.]')}'")
-                await context.bot.delete_message(chat_id, message_id)
-                await context.bot.send_message(
-                    chat_id,
-                    f"Сообщение от {first_name}(@{username}) было удалено автоматическим фильтром. Причина: подозрительная ссылка."
-                    )
+            tlg_proc_log.debug(
+                f"# Text: {message.text or None}, \
+                    Caption: {message.caption or None}, \
+                    Name: {message.from_user.first_name}, \
+                    Login: {message.from_user.username}, \
+                    URLS:{urls}, \
+                    Chat ID: {message.chat_id}, \
+                    Message ID: {message.message_id}")
 
-        try:
-            text = res[message_key]['text']
-        except: None
-        try:
-            caption = res[message_key]['caption']
-        except: None
-        try:
-            first_name = res[message_key]['from']['first_name']
-        except: None
-        try:
-            username = res[message_key]['from']['username']
-        except: None
+            check_text_result = ""
+            if message.text:
+                check_text_result = self.filter.check_text(message.text, message.from_user.username)
+            if message.caption:
+                check_text_result = self.filter.check_text(message.caption, message.from_user.username)
 
-        chat_id = res[message_key]['chat']['id']
-        message_id = res[message_key]['message_id']
-        tlg_proc_log.debug(f"# Text: {text}, Caption: {caption}, Name: {first_name}, Login: {username}, URLS: {urls}, Chat ID: {chat_id}, Message ID: {message_id}")
-
-        check_text_result = ""
-        if text != "":
-            check_text_result = self.filter.check_text(text, username)
-        if caption != "":
-            check_text_result = self.filter.check_text(caption, username)
-
-        tlg_proc_log.debug(f"# Filter result: {check_text_result}")
-        if check_text_result:
-            chat_id = update.message.chat.id
-            await self.notify_and_remove(check_text_result, chat_id, message_id, context)
+            tlg_proc_log.debug(f"# Filter result: {check_text_result}")
+            if check_text_result['result'] == 1:
+                await self.notify_and_remove(check_text_result, message, context)

@@ -1,4 +1,4 @@
-# Reviewed: May 02, 2024
+# Reviewed: May 15, 2024
 
 import argparse
 from telegram import Update
@@ -15,8 +15,7 @@ def main() -> None:
     # # # # Parsing args # # # #
     parser = argparse.ArgumentParser(
         prog = "Telegram Moderator bot",
-        description = "This script can strictly moderate Telegram chats"
-        )
+        description = "This script can strictly moderate Telegram chats")
 
     parser.add_argument("-d", "--debug", dest = "debug_enabled",
                         action = "store_true", default = False,
