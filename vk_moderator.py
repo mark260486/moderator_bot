@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Reviewed: May 16, 2024
+from __future__ import annotations
 
 import argparse
 import asyncio
@@ -84,7 +86,8 @@ async def main() -> None:
     # # # # Start VK longpoll # # # #
     vk_longpoll = await Longpoll.create()
     proc = await VK_processing.create(
-        debug_enabled=args.debug_enabled, send_msg_to_vk=args.send_msg_to_vk
+        debug_enabled=args.debug_enabled,
+        send_msg_to_vk=args.send_msg_to_vk,
     )
 
     while True:

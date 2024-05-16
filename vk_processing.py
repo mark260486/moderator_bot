@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Reviewed: May 16, 2024
+from __future__ import annotations
 
 from time import sleep
 
@@ -39,7 +41,9 @@ class VK_processing:
                     level="DEBUG",
                     format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
                 )
-                vk_proc_log.debug("# VK Processing class will run in Debug mode.")
+                vk_proc_log.debug(
+                    "# VK Processing class will run in Debug mode.",
+                )
             else:
                 vk_proc_log.add(
                     Logs.processing_log,
@@ -93,7 +97,9 @@ class VK_processing:
         """
         username = await self.vk_users.get(user_id=user_id)
         if username["error"] == 1:
-            vk_proc_log.error(f"# Can't get username from ID: {username['text']}")
+            vk_proc_log.error(
+                f"# Can't get username from ID: {username['text']}",
+            )
             return "Can't get username"
         else:
             return username["text"]
@@ -137,9 +143,14 @@ class VK_processing:
         """
 
         filter_result = await self.filter.filter_response(
-            message, username, attachments, isMember
+            message,
+            username,
+            attachments,
+            isMember,
         )
-        vk_proc_log.debug("============== Filter response processing =================")
+        vk_proc_log.debug(
+            "============== Filter response processing =================",
+        )
         vk_proc_log.debug(f"# False positive: {false_positive}")
         vk_proc_log.debug(f"# Filter result: {filter_result}")
 
@@ -153,18 +164,22 @@ class VK_processing:
         #    through VK API search messages get possibly redacted message and check it once again.
         if filter_result["result"] in [0, 2] and false_positive is False:
             vk_proc_log.debug(
-                f"# Clear message, wait for {VK.check_delay} seconds and check it once more."
+                f"# Clear message, wait for {VK.check_delay} seconds and check it once more.",
             )
             sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = await self.vk_messages.search(
-                group_id, peer_id, VK.messages_search_count
+                group_id,
+                peer_id,
+                VK.messages_search_count,
             )
             last_reply = last_reply["text"]
             vk_proc_log.debug(f"# Last reply: {last_reply}")
             await self.filter_response_processing(
                 last_reply["items"][0]["text"],
-                await self.get_username(user_id=last_reply["items"][0]["from_id"]),
+                await self.get_username(
+                    user_id=last_reply["items"][0]["from_id"]
+                ),
                 group_id,
                 isMember,
                 last_reply["items"][0]["peer_id"],
@@ -183,10 +198,12 @@ class VK_processing:
             msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
             vk_proc_log.info(msg)
             vk_proc_log.debug(
-                f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}"
+                f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}",
             )
 
-            delete_result = await self.vk_messages.delete(group_id, cm_id, peer_id)
+            delete_result = await self.vk_messages.delete(
+                group_id, cm_id, peer_id
+            )
             vk_proc_log.debug(f"# Delete result: {delete_result['text']}")
             if delete_result["error"] == 0:
                 vk_proc_log.info("# Message was removed")
@@ -208,7 +225,7 @@ class VK_processing:
             if self.send_msg_to_vk:
                 if send_result["error"] == 0:
                     vk_proc_log.info(
-                        f"# Service message was sent to {VK.chats[str(peer_id)]}"
+                        f"# Service message was sent to {VK.chats[str(peer_id)]}",
                     )
 
         # If filter returns 2 - we should get warning to Telegram
@@ -234,19 +251,24 @@ class VK_processing:
 
         vk_proc_log.debug("# Processing message")
         message = await self.replacements(
-            response["updates"][0]["object"]["message"]["text"]
+            response["updates"][0]["object"]["message"]["text"],
         )
-        attachments = response["updates"][0]["object"]["message"]["attachments"]
+        attachments = response["updates"][0]["object"]["message"][
+            "attachments"
+        ]
         user_id = response["updates"][0]["object"]["message"]["from_id"]
         group_id = response["updates"][0]["group_id"]
         peer_id = response["updates"][0]["object"]["message"]["peer_id"]
-        cm_id = response["updates"][0]["object"]["message"]["conversation_message_id"]
+        cm_id = response["updates"][0]["object"]["message"][
+            "conversation_message_id"
+        ]
         username = await self.get_username(user_id)
         # Check if user is in Group. If not - it's suspicious
         vk_proc_log.debug("# Checking if User is in Group")
         isMember = True
         isMemberRes = await self.vk_groups.isMember(
-            user_id=user_id, group_id=VK.vk_api.group_id
+            user_id=user_id,
+            group_id=VK.vk_api.group_id,
         )
         if isMemberRes["text"] == "0":
             vk_proc_log.info("# Message was sent by User not in Group")
@@ -255,21 +277,21 @@ class VK_processing:
         # Kick user notification
         if message == "" and attachments == "":
             try:
-                action_type = response["updates"][0]["object"]["message"]["action"][
-                    "type"
-                ]
+                action_type = response["updates"][0]["object"]["message"][
+                    "action"
+                ]["type"]
             except Exception:
                 vk_proc_log.error("# Can't get Action Type from the response")
                 raise
             if action_type != "":
                 if action_type == "chat_kick_user":
-                    kicked_user_id = response["updates"][0]["object"]["message"][
-                        "action"
-                    ]["member_id"]
+                    kicked_user_id = response["updates"][0]["object"][
+                        "message"
+                    ]["action"]["member_id"]
                     kicked_username = await self.vk_users.get(kicked_user_id)
                     if kicked_username["error"] == 1:
                         vk_proc_log.error(
-                            f"# Can't get username from ID: {kicked_username['text']}"
+                            f"# Can't get username from ID: {kicked_username['text']}",
                         )
                     else:
                         kicked_username = kicked_username["text"]
@@ -303,17 +325,25 @@ class VK_processing:
         """
 
         vk_proc_log.debug("# Processing comment")
-        message = await self.replacements(response["updates"][0]["object"]["text"])
+        message = await self.replacements(
+            response["updates"][0]["object"]["text"]
+        )
         user_id = response["updates"][0]["object"]["from_id"]
         username = await self.vk_users.get(user_id)
         if username["error"] == 1:
-            vk_proc_log.error(f"# Can't get username from ID: {username['text']}")
+            vk_proc_log.error(
+                f"# Can't get username from ID: {username['text']}",
+            )
             return False
         else:
             username = username["text"]
 
         vk_proc_log.debug(f"# New/edited comment: {message}; User: {username}")
-        filter_result = await self.filter.filter_response(message, username, [], True)
+        filter_result = await self.filter.filter_response(
+            message, username, [], True
+        )
         vk_proc_log.debug(f"# Filter result: {filter_result}")
         if filter_result["result"] == 1:
-            vk_proc_log.info(f"# Comment to remove from {username}: '{message}'")
+            vk_proc_log.info(
+                f"# Comment to remove from {username}: '{message}'",
+            )

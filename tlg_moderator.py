@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Reviewed: May 15, 2024
+from __future__ import annotations
 
 import argparse
 import asyncio
@@ -6,8 +8,12 @@ import asyncio
 from loguru import logger
 from notifiers.logging import NotificationHandler
 from telegram import Update
-from telegram.ext import (Application, ChatMemberHandler, MessageHandler,
-                          filters)
+from telegram.ext import (
+    Application,
+    ChatMemberHandler,
+    MessageHandler,
+    filters,
+)
 
 from config import Telegram
 from tlg_processing import TLG_processing
@@ -82,13 +88,16 @@ async def main(loop) -> None:
 
     # On non command i.e message - moderate message content
     app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, proc.moderate_message)
+        MessageHandler(filters.TEXT & ~filters.COMMAND, proc.moderate_message),
     )
     app.add_handler(MessageHandler(filters.ATTACHMENT, proc.moderate_message))
 
     # Handle members joining/leaving chats.
     app.add_handler(
-        ChatMemberHandler(proc.greet_chat_members, ChatMemberHandler.CHAT_MEMBER)
+        ChatMemberHandler(
+            proc.greet_chat_members,
+            ChatMemberHandler.CHAT_MEMBER,
+        ),
     )
 
     # Run the bot until the user presses Ctrl-C

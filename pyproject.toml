@@ -1,0 +1,25 @@
+[tool.black]
+line-length = 79
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+#[tool.flake8]
+#max-line-length = 79
+#exclude = [".git", "__pycache__", "dist"]
+#extend-ignore = ["E203", "E266", "E501", "W503", "F403", "F401"]
+#max-complexity = 10
+
+[tool.isort]
+profile = "black"

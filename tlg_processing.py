@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 # Reviewed: May 16, 2024
-
-from typing import Optional, Tuple
+from __future__ import annotations
 
 from loguru import logger
 from loguru import logger as tlg_proc_log
@@ -38,7 +38,7 @@ class TLG_processing:
                     format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
                 )
                 tlg_proc_log.debug(
-                    "# Telegram Processing class will run in Debug mode."
+                    "# Telegram Processing class will run in Debug mode.",
                 )
             else:
                 tlg_proc_log.add(
@@ -58,15 +58,17 @@ class TLG_processing:
 
     @tlg_proc_log.catch
     async def extract_status_change(
-        self, chat_member_update: ChatMemberUpdated
-    ) -> Optional[Tuple[bool, bool]]:
+        self,
+        chat_member_update: ChatMemberUpdated,
+    ) -> tuple[bool, bool] | None:
         """Takes a ChatMemberUpdated instance and extracts whether the 'old_chat_member' was a member
         of the chat and whether the 'new_chat_member' is a member of the chat. Returns None, if
         the status didn't change.
         """
         status_change = chat_member_update.difference().get("status")
         old_is_member, new_is_member = chat_member_update.difference().get(
-            "is_member", (None, None)
+            "is_member",
+            (None, None),
         )
 
         if status_change is None:
@@ -89,7 +91,9 @@ class TLG_processing:
 
     @tlg_proc_log.catch
     async def greet_chat_members(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
     ) -> None:
         """Greets new users in chats and announces when someone leaves"""
         result = await self.extract_status_change(update.chat_member)
@@ -112,8 +116,11 @@ class TLG_processing:
         elif was_member and not is_member:
             if any(admin in cause_name for admin in Telegram.admin_ids):
                 # Ban message
-                msg = Telegram.ban_msg.replace("member_name", member_name).replace(
-                    "cause_name", cause_name
+                msg = Telegram.ban_msg.replace(
+                    "member_name", member_name
+                ).replace(
+                    "cause_name",
+                    cause_name,
                 )
                 # Remove "Deleted account" message
                 if "><" in member_name:
@@ -127,21 +134,33 @@ class TLG_processing:
         # Unmute message
         # is_member can be in two states: True if user still here and False if user leave while was muted.
         elif was_member and is_member and not was_muted:
-            msg = Telegram.unmute_msg_is_member.replace("member_name", member_name)
+            msg = Telegram.unmute_msg_is_member.replace(
+                "member_name",
+                member_name,
+            )
         elif was_member and not is_member and not was_muted:
-            msg = Telegram.unmute_msg_was_member.replace("member_name", member_name)
+            msg = Telegram.unmute_msg_was_member.replace(
+                "member_name",
+                member_name,
+            )
 
         tlg_proc_log.debug(
-            f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}"
+            f"Cause name: {cause_name}, member name: {member_name}, msg: {msg}",
         )
         if msg:
             await context.bot.send_message(
-                update.chat_member.chat.id, msg, parse_mode=ParseMode.HTML
+                update.chat_member.chat.id,
+                msg,
+                parse_mode=ParseMode.HTML,
             )
 
     @tlg_proc_log.catch
     async def notify_and_remove(
-        self, check_result, text, message, context: ContextTypes.DEFAULT_TYPE
+        self,
+        check_result,
+        text,
+        message,
+        context: ContextTypes.DEFAULT_TYPE,
     ):
         # Compose message for notification
         div = "-----------------------------"
@@ -157,7 +176,9 @@ class TLG_processing:
 
     @tlg_proc_log.catch
     async def moderate_message(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
     ) -> None:
         """Moderate message"""
 
@@ -180,10 +201,11 @@ class TLG_processing:
                 if check_url_result["result"] == 1:
                     tlg_proc_log.info(
                         f"Message to remove from {message.from_user.first_name}(@{message.from_user.username})\n \
-                                    '{check_url_result['text'].replace('.', '[.]')}'"
+                                    '{check_url_result['text'].replace('.', '[.]')}'",
                     )
                     await context.bot.delete_message(
-                        message.chat.id, message.message_id
+                        message.chat.id,
+                        message.message_id,
                     )
                     await context.bot.send_message(
                         message.chat_id,
@@ -198,18 +220,20 @@ class TLG_processing:
                     Login: {message.from_user.username}, \
                     URLS:{urls}, \
                     Chat ID: {message.chat_id}, \
-                    Message ID: {message.message_id}"
+                    Message ID: {message.message_id}",
             )
 
             check_text_result = None
             if message.text:
                 check_text_result = await self.filter.check_text(
-                    message.text, message.from_user.username
+                    message.text,
+                    message.from_user.username,
                 )
                 text = message.text
             if message.caption:
                 check_text_result = await self.filter.check_text(
-                    message.caption, message.from_user.username
+                    message.caption,
+                    message.from_user.username,
                 )
                 text = message.caption
 
@@ -217,7 +241,10 @@ class TLG_processing:
                 tlg_proc_log.debug(f"# Filter result: {check_text_result}")
                 if check_text_result["result"] == 1:
                     await self.notify_and_remove(
-                        check_text_result, text, message, context
+                        check_text_result,
+                        text,
+                        message,
+                        context,
                     )
             else:
                 tlg_proc_log.debug("No check text result.")

@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Reviewed: May 16, 2024
+from __future__ import annotations
 
 import asyncio
 import json
@@ -101,7 +103,11 @@ class VK_API:
                 auth=auth,
                 data=data,
             )
-        except (requests.ConnectionError, requests.HTTPError, requests.Timeout) as e:
+        except (
+            requests.ConnectionError,
+            requests.HTTPError,
+            requests.Timeout,
+        ) as e:
             msg = f"# Error occure during the request: {str(e)}"
             vk_api_log.error(msg)
             return msg
@@ -156,7 +162,11 @@ class Users(VK_API):
         payload = {"user_ids": user_id, "v": VK.vk_api.version}
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
         response = await self.do_request(
-            "GET", vk_api_url, headers=headers, params=payload, use_ssl=self.use_ssl
+            "GET",
+            vk_api_url,
+            headers=headers,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         if response["response"] == []:
             self.result["text"] = VK.public_name
@@ -206,11 +216,19 @@ class Groups(VK_API):
         self.reset_result()
         vk_method = "groups.isMember"
         vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
-        payload = {"user_id": user_id, "group_id": group_id, "v": VK.vk_api.version}
+        payload = {
+            "user_id": user_id,
+            "group_id": group_id,
+            "v": VK.vk_api.version,
+        }
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
 
         response = await self.do_request(
-            "GET", vk_api_url, headers=headers, params=payload, use_ssl=self.use_ssl
+            "GET",
+            vk_api_url,
+            headers=headers,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         self.result["text"] = str(response["response"])
         return self.result
@@ -235,7 +253,11 @@ class Groups(VK_API):
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
 
         response = await self.do_request(
-            "GET", vk_api_url, headers=headers, params=payload, use_ssl=self.use_ssl
+            "GET",
+            vk_api_url,
+            headers=headers,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         if "error" in response.keys():
             try:
@@ -243,7 +265,9 @@ class Groups(VK_API):
                 self.result["text"] = msg
                 self.result["error"] = 1
             except Exception:
-                self.result["text"] = "Cannot get neccessary keys from VK API response."
+                self.result["text"] = (
+                    "Cannot get neccessary keys from VK API response."
+                )
                 self.result["error"] = 1
                 raise
             return self.result
@@ -300,7 +324,11 @@ class Messages(VK_API):
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
 
         response = await self.do_request(
-            "GET", vk_api_url, headers=headers, params=payload, use_ssl=self.use_ssl
+            "GET",
+            vk_api_url,
+            headers=headers,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         if "error" in response["response"][0].keys():
             msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
@@ -332,7 +360,10 @@ class Messages(VK_API):
 
         # We will need current date in DDMMYYYY format to search all before this date.
         # There will be tomorrow to get latest messages.
-        tomorrow = datetime.strftime(datetime.today() + timedelta(days=1), "%d%m%Y")
+        tomorrow = datetime.strftime(
+            datetime.today() + timedelta(days=1),
+            "%d%m%Y",
+        )
 
         self.reset_result()
         vk_method = "messages.search"
@@ -347,7 +378,11 @@ class Messages(VK_API):
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
 
         response = await self.do_request(
-            "GET", vk_api_url, headers=headers, params=payload, use_ssl=self.use_ssl
+            "GET",
+            vk_api_url,
+            headers=headers,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         if "error" in response["response"].keys():
             msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
@@ -390,7 +425,11 @@ class Messages(VK_API):
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
 
         response = await self.do_request(
-            "GET", vk_api_url, headers=headers, params=payload, use_ssl=self.use_ssl
+            "GET",
+            vk_api_url,
+            headers=headers,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         if "error" in response["response"][0].keys():
             msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
@@ -421,7 +460,7 @@ class Longpoll(Groups):
             vk_api_log.debug(f"# {get_lp_server_result['text']}")
         else:
             vk_api_log.error(
-                f"# Get Longpoll server parameters error. {get_lp_server_result['text']}"
+                f"# Get Longpoll server parameters error. {get_lp_server_result['text']}",
             )
         return self
 
@@ -444,7 +483,10 @@ class Longpoll(Groups):
         }
 
         response = await self.do_request(
-            "GET", self.lp_server, params=payload, use_ssl=self.use_ssl
+            "GET",
+            self.lp_server,
+            params=payload,
+            use_ssl=self.use_ssl,
         )
         return response
 
@@ -463,8 +505,15 @@ class Longpoll(Groups):
         # reset if next request is OK
         errors_limit = VK.errors_limit
         wait_period = VK.wait_period
-        vk_api_log.debug("# Start to listen LongPoll API. Errors counter was resetted")
-        lp_res = {"errors_counter": 0, "response": "", "response_type": "", "error": 0}
+        vk_api_log.debug(
+            "# Start to listen LongPoll API. Errors counter was resetted",
+        )
+        lp_res = {
+            "errors_counter": 0,
+            "response": "",
+            "response_type": "",
+            "error": 0,
+        }
         response = await self.listen_longpoll()
         # If there is error in VK Longpoll response - process it
         vk_api_log.debug(f"# Longpoll API response: {response}")
@@ -487,7 +536,9 @@ class Longpoll(Groups):
                 # In case of warning we count to ERRORS_LIMIT and then stop
                 lp_res["errors_counter"] += 1
                 vk_api_log.debug(process_result["text"])
-                vk_api_log.debug(f"# Errors counter: {lp_res['errors_counter']}")
+                vk_api_log.debug(
+                    f"# Errors counter: {lp_res['errors_counter']}",
+                )
                 if lp_res["errors_counter"] == errors_limit:
                     msg = "# Errors limit is over. Shut down."
                     vk_api_log.error(msg)
@@ -503,11 +554,13 @@ class Longpoll(Groups):
                 lp_res["error"] = 1
                 return lp_res
         else:
-            vk_api_log.debug("# No failures in response. Errors counter was resetted")
+            vk_api_log.debug(
+                "# No failures in response. Errors counter was resetted",
+            )
             lp_res["errors_counter"] = 0
             if response["updates"] == []:
                 vk_api_log.debug(
-                    "# Listening interval passed, nothing new. Proceeding..."
+                    "# Listening interval passed, nothing new. Proceeding...",
                 )
                 return lp_res
             # Process response with message
@@ -562,7 +615,9 @@ class Longpoll(Groups):
             )
             self.result["error"] = 0
         if result["failed"] == 4:
-            self.result["text"] = "[VK WARNING] Incorrect version of VK API was passed."
+            self.result["text"] = (
+                "[VK WARNING] Incorrect version of VK API was passed."
+            )
             self.result["error"] = 0
             await self.getLongPollServer()
         if self.result["text"] == "":

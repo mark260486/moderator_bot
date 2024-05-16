@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 # Reviewed: May 16, 2024
+from __future__ import annotations
 
 import re
 
@@ -62,7 +64,11 @@ class Filter:
     # Message filter. Returns true if message contains anything illegal
     @filter_log.catch
     async def filter_response(
-        self, text: str, username: str, attachments: str, isMember: bool
+        self,
+        text: str,
+        username: str,
+        attachments: str,
+        isMember: bool,
     ) -> dict:
         """
         Filter class method to filter provided text and/or attachments.
@@ -83,13 +89,17 @@ class Filter:
         :rtype: ``dict``
         """
 
-        self.filter_log.debug("================ Filter response ==================")
+        self.filter_log.debug(
+            "================ Filter response ==================",
+        )
         self.filter_log.debug("# Filtering response")
         # Set isMember
         if isMember is not None:
             self.isMember = isMember
         # Attachments checks
-        check_attachments_result = await self.check_attachments(attachments, username)
+        check_attachments_result = await self.check_attachments(
+            attachments, username
+        )
         if check_attachments_result:
             if check_attachments_result["result"] > 0:
                 return check_attachments_result
@@ -121,22 +131,32 @@ class Filter:
 
         await self.reset_results()
         for attachment in attachments:
-            self.filter_log.debug(f"Checking attachment of type {attachment['type']}")
+            self.filter_log.debug(
+                f"Checking attachment of type {attachment['type']}",
+            )
             # Links
             if attachment["type"] == "link":
                 for item in Words_DB.blacklists.spam_list:
-                    if item in attachment["link"]["url"].lower().replace(" ", ""):
+                    if item in attachment["link"]["url"].lower().replace(
+                        " ", ""
+                    ):
                         msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found in attachment!"
                         self.filter_log.debug(f"# {msg}")
                         self.result["result"] = 1
                         self.result["text"] = msg
-                        self.result["case"] = "подозрительная ссылка, спам, реклама."
+                        self.result["case"] = (
+                            "подозрительная ссылка, спам, реклама."
+                        )
                         return self.result
             # Repost content and Repost comment content
-            if attachment["type"] == "wall" or attachment["type"] == "wall_reply":
+            if (
+                attachment["type"] == "wall"
+                or attachment["type"] == "wall_reply"
+            ):
                 key = attachment["type"]
                 check_wall_result = await self.check_text(
-                    attachment[key]["text"], username
+                    attachment[key]["text"],
+                    username,
                 )
                 if check_wall_result:
                     check_wall_result["case"] += " Вложение."
@@ -168,8 +188,10 @@ class Filter:
             return spam_list_check
 
         # Check if message contains mishmash and user name is in English
-        if await self.check_for_english(text_to_check) and await self.check_for_english(
-            username
+        if await self.check_for_english(
+            text_to_check
+        ) and await self.check_for_english(
+            username,
         ):
             msg = f"{username} with {text_to_check} was catched."
             self.result["result"] = 2
@@ -201,7 +223,9 @@ class Filter:
 
         # Suspicious words check
         # If we have more than X words - kill it
-        suspicious_check_result = await self.check_for_suspicious_words(text_to_check)
+        suspicious_check_result = await self.check_for_suspicious_words(
+            text_to_check
+        )
         if suspicious_check_result["result"] > 0:
             return suspicious_check_result
 
@@ -268,7 +292,9 @@ class Filter:
                 self.filter_log.debug(f"# {msg}")
                 self.result["result"] = 1
                 self.result["text"] = msg
-                self.result["case"] = "подозрительный набор слов, спам, реклама."
+                self.result["case"] = (
+                    "подозрительный набор слов, спам, реклама."
+                )
                 return self.result
 
             if result_len > 0 and result_len < max_points:
@@ -303,9 +329,7 @@ class Filter:
         self.filter_log.debug("# Checking text for links")
         for item in Words_DB.blacklists.spam_list:
             if item in text_to_check.lower().replace(" ", ""):
-                msg = (
-                    f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
-                )
+                msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
                 self.filter_log.debug(f"# {msg}")
                 self.result["result"] = 1
                 self.result["text"] = msg
@@ -337,7 +361,9 @@ class Filter:
             matches = re.search(re.compile(regex), text_to_check)
             if matches is not None:
                 if not await self.check_for_whitelist(matches.string):
-                    discovered_words.append(f"{matches.group()} in {matches.string}")
+                    discovered_words.append(
+                        f"{matches.group()} in {matches.string}",
+                    )
                     self.filter_log.info(f"Regex results: {discovered_words}")
 
         for item in Words_DB.blacklists.curses_list:
@@ -379,7 +405,7 @@ class Filter:
             match = re.findall(pattern, text_to_check)
             if match:
                 self.filter_log.debug(
-                    f"# Whitelist '{item}' was found in '{match}', passing..."
+                    f"# Whitelist '{item}' was found in '{match}', passing...",
                 )
                 return True
         return False
@@ -397,7 +423,9 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for phones")
-        pattern = r"\+\d+([!\s\(-_]?)+\d+([!\s\)-_]?)+\d+([ _-]?)+\d+([ _-]?)+\d"
+        pattern = (
+            r"\+\d+([!\s\(-_]?)+\d+([!\s\)-_]?)+\d+([ _-]?)+\d+([ _-]?)+\d"
+        )
         match = re.search(pattern, text_to_check)
         if match:
             return match.group()
