@@ -1,4 +1,4 @@
-# Reviewed: May 15, 2024
+# Reviewed: May 16, 2024
 
 
 class VK:
@@ -38,9 +38,10 @@ class Telegram:
     greeting_msg = "К нам присоединяется member_name.\nДобро пожаловать!"
     ban_msg = "Администратор cause_name вышвыривает member_name. Земля ему стекловатой."
     clear_msg = "Администратор cause_name убирает из подписчиков 'Удалённый аккаунт'."
-    leave_msg = "member_name покинул канал. Удачи!"
+    leave_msg = "member_name покинул чат. Удачи!"
     mute_msg = "member_name заболевает молчанкой."
-    unmute_msg = "member_name вылечивается от молчанки."
+    unmute_msg_is_member = "member_name вылечивается от молчанки."
+    unmute_msg_was_member = "member_name вылечивается от молчанки и покидает чат."
     # admin_ids are for personal IDs of the Telegram Chat to split users and Admins in script logic.
     admin_ids = ["0000"]
     log_path = "/var/log/moderator_bot/tlg_moderator.log"

@@ -1,4 +1,4 @@
-# Reviewed: May 08, 2024
+# Reviewed: May 16, 2024
 
 import re
 from loguru import logger as filter_log
@@ -7,7 +7,7 @@ from config import Logs, Words_DB
 
 
 class Filter:
-    def __init__(self, filter_log: logger = filter_log, debug_enabled: bool = False) -> None: # type: ignore
+    def __init__(self, filter_log: logger = filter_log, debug_enabled: bool = False) -> None:  # type: ignore
         """
         Filter class init
 
@@ -23,7 +23,7 @@ class Filter:
         :return: Returns the class instance.
         """
 
-        if filter_log == None:
+        if filter_log is None:
             if debug_enabled:
                 filter_log.add(Logs.filter_log, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
                 filter_log.debug("# Filter class will run in Debug mode.")
@@ -34,7 +34,6 @@ class Filter:
             self.filter_log = filter_log
         self.isMember = True
         self.reset_results()
-
 
     @filter_log.catch
     def reset_results(self):
@@ -49,7 +48,6 @@ class Filter:
             'text': "",
             'case': ""
         }
-
 
     # Message filter. Returns true if message contains anything illegal
     @filter_log.catch
@@ -73,10 +71,10 @@ class Filter:
         :rtype: ``dict``
         """
 
-        self.filter_log.debug(f"================ Filter response ==================")
+        self.filter_log.debug("================ Filter response ==================")
         self.filter_log.debug("# Filtering response")
         # Set isMember
-        if isMember != None:
+        if isMember is not None:
             self.isMember = isMember
         # Attachments checks
         check_attachments_result = self.check_attachments(attachments, username)
@@ -92,7 +90,6 @@ class Filter:
 
         self.result['result'] = 0
         return self.result
-
 
     # Check of attachments for links and bad things in repost/reply
     @filter_log.catch
@@ -132,7 +129,6 @@ class Filter:
                     return check_wall_result
         self.result['result'] = 0
         return self.result
-
 
     @filter_log.catch
     def check_text(self, text_to_check, username) -> dict:
@@ -197,7 +193,6 @@ class Filter:
         self.result['result'] = 0
         return self.result
 
-
     @filter_log.catch
     def check_for_english(self, text_to_check) -> bool:
         """
@@ -211,12 +206,11 @@ class Filter:
         """
 
         self.reset_results()
-        self.filter_log.debug(f"# Checking text for english")
+        self.filter_log.debug("# Checking text for english")
         text_check = re.findall("[A-Za-z].+", text_to_check)
         if text_check:
             return True
         return False
-
 
     @filter_log.catch
     def check_for_suspicious_words(self, text_to_check) -> dict:
@@ -231,7 +225,7 @@ class Filter:
         """
 
         self.reset_results()
-        self.filter_log.debug(f"# Checking text for suspicious words")
+        self.filter_log.debug("# Checking text for suspicious words")
         # If we have more than X words - kill it
         max_points = Words_DB.blacklists.suspicious_points_limit
         discovered_words = []
@@ -246,7 +240,8 @@ class Filter:
                         discovered_words.append(f"{item} in {match}")
 
         result_len = len(discovered_words)
-        if not self.isMember: result_len += 1
+        if not self.isMember:
+            result_len += 1
 
         if result_len >= max_points:
             msg = f"Suspicious '{discovered_words}' was found.\nMore than {max_points} suspicious words were found."
@@ -271,7 +266,6 @@ class Filter:
             self.result['result'] = 0
             return self.result
 
-
     @filter_log.catch
     def check_for_links(self, text_to_check) -> dict:
         """
@@ -285,7 +279,7 @@ class Filter:
         """
 
         self.reset_results()
-        self.filter_log.debug(f"# Checking text for links")
+        self.filter_log.debug("# Checking text for links")
         for item in Words_DB.blacklists.spam_list:
             if item in text_to_check.lower().replace(" ", ""):
                 msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
@@ -296,7 +290,6 @@ class Filter:
                 return self.result
         self.result['result'] = 0
         return self.result
-
 
     @filter_log.catch
     def check_for_curses(self, text_to_check) -> dict:
@@ -311,15 +304,15 @@ class Filter:
         """
 
         self.reset_results()
-        self.filter_log.debug(f"# Checking text for curses")
+        self.filter_log.debug("# Checking text for curses")
         text_to_check.replace('ё', 'е')
         text_to_check.replace('\n', ' ')
         text_to_check = text_to_check.lower()
-        discovered_words = []
+        discovered_words = None
         regex_blacklist = Words_DB.blacklists.regex_list
         for regex in regex_blacklist:
             matches = re.search(re.compile(regex), text_to_check)
-            if matches != None:
+            if matches is not None:
                 if not self.check_for_whitelist(matches.string):
                     discovered_words.append(f"{matches.group()} in {matches.string}")
                     self.filter_log.info(f"Regex results: {discovered_words}")
@@ -344,7 +337,6 @@ class Filter:
         self.result['result'] = 0
         return self.result
 
-
     @filter_log.catch
     def check_for_whitelist(self, text_to_check):
         """
@@ -358,7 +350,7 @@ class Filter:
         """
 
         self.reset_results()
-        self.filter_log.debug(f"# Checking text for whitelist")
+        self.filter_log.debug("# Checking text for whitelist")
         for item in Words_DB.whitelist:
             pattern = r'(\b\S*%s\S*\b)' % item
             match = re.findall(pattern, text_to_check)
@@ -366,7 +358,6 @@ class Filter:
                 self.filter_log.debug(f"# Whitelist '{item}' was found in '{match}', passing...")
                 return True
         return False
-
 
     @filter_log.catch
     def check_for_phone(self, text_to_check):
@@ -380,9 +371,9 @@ class Filter:
         """
 
         self.reset_results()
-        self.filter_log.debug(f"# Checking text for phones")
+        self.filter_log.debug("# Checking text for phones")
         pattern = r'\+\d+([!\s\(-_]?)+\d+([!\s\)-_]?)+\d+([ _-]?)+\d+([ _-]?)+\d'
         match = re.search(pattern, text_to_check)
         if match:
-            return(match.group())
+            return (match.group())
         return None

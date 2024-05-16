@@ -1,4 +1,4 @@
-# Reviewed: May 07, 2024
+# Reviewed: May 16, 2024
 
 import argparse
 from loguru import logger
@@ -13,8 +13,7 @@ def main() -> None:
     # # # # Parsing args # # # #
     parser = argparse.ArgumentParser(
         prog = "VK Moderator bot",
-        description = "This script can strictly moderate VK public's chats"
-        )
+        description = "This script can strictly moderate VK public's chats")
 
     parser.add_argument("-d", "--debug", dest = "debug_enabled", action = "store_true",
                         default = False,
@@ -50,8 +49,8 @@ def main() -> None:
         }
         tg_handler = NotificationHandler("telegram", defaults = tg_params)
         main_log.add(tg_handler, format = "{message}", level = "INFO")
-    
-    main_log.info(f"# VK Moderator bot is (re)starting...")
+
+    main_log.info("# VK Moderator bot is (re)starting...")
 
     # # # # Start VK longpoll # # # #
     vk_longpoll = Longpoll()

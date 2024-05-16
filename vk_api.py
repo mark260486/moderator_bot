@@ -1,4 +1,4 @@
-# Reviewed: May 07, 2024
+# Reviewed: May 16, 2024
 
 import random
 import requests
@@ -11,7 +11,7 @@ from config import VK
 
 
 class VK_API:
-    def __init__(self, vk_api_log: logger = vk_api_log, debug_enabled: bool = False, # type: ignore
+    def __init__(self, vk_api_log: logger = vk_api_log, debug_enabled: bool = False,  # type: ignore
                  use_ssl: bool = True) -> None:
         """
         VK API class init
@@ -32,7 +32,7 @@ class VK_API:
             'error': 0
         }
 
-        if vk_api_log == None:
+        if vk_api_log is None:
             if debug_enabled:
                 vk_api_log.add(VK.log_path, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
                 vk_api_log.debug("# VK API class will run in Debug mode.")
@@ -41,7 +41,6 @@ class VK_API:
             self.vk_api_log = vk_api_log
         else:
             self.vk_api_log = vk_api_log
-
 
     @vk_api_log.catch
     def do_request(self, method: str, url: str, headers: dict = None, params: dict = None,
@@ -71,7 +70,7 @@ class VK_API:
         :rtype: ``dict``
         """
 
-        vk_api_log.debug(f"============== Do request ================")
+        vk_api_log.debug("============== Do request ================")
         vk_api_log.debug(f"# Requesting for: {url}")
         try:
             response = requests.request(
@@ -98,7 +97,6 @@ class VK_API:
             msg = f"# Failed to parse json object from response. Exception: {exception}"
             raise ValueError(msg)
 
-
     @vk_api_log.catch
     def reset_result(self) -> None:
         """
@@ -119,7 +117,6 @@ class Users(VK_API):
         :return: Returns the class instance.
         """
         super().__init__()
-
 
     @vk_api_log.catch
     def get(self, user_id: int) -> dict:
@@ -168,7 +165,6 @@ class Groups(VK_API):
         self.use_ssl = use_ssl
         self.vk_api_url = VK.vk_api.api_url
 
-
     @vk_api_log.catch
     def isMember(self, user_id: int, group_id: int) -> dict:
         """
@@ -201,7 +197,6 @@ class Groups(VK_API):
         self.result['text'] = str(response['response'])
         return self.result
 
-
     @vk_api_log.catch
     def getLongPollServer(self) -> dict:
         """
@@ -216,7 +211,7 @@ class Groups(VK_API):
         vk_method = "groups.getLongPollServer"
         vk_api_url = f"{self.vk_api_url}{vk_method}"
         vk_group_id = VK.vk_api.group_id
-        vk_api_version =  VK.vk_api.version
+        vk_api_version = VK.vk_api.version
 
         payload = {
             'group_id': vk_group_id,
@@ -232,9 +227,10 @@ class Groups(VK_API):
                 msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
                 self.result['text'] = msg
                 self.result['error'] = 1
-            except:
+            except Exception:
                 self.result['text'] = "Cannot get neccessary keys from VK API response."
                 self.result['error'] = 1
+                raise
             return self.result
         self.lp_server = response['response']['server']
         self.lp_key = response['response']['key']
@@ -251,7 +247,6 @@ class Messages(VK_API):
         :return: Returns the class instance.
         """
         super().__init__()
-
 
     @vk_api_log.catch
     def send(self, text: str, group_id: int, peer_id: int) -> dict:
@@ -280,7 +275,7 @@ class Messages(VK_API):
             'peer_id': peer_id,
             'message': text,
             'random_id': random.randint(100, 100000),
-            'v':  VK.vk_api.version
+            'v': VK.vk_api.version
         }
         headers = {
             'Authorization': f"Bearer {VK.vk_api.api_key}"
@@ -295,7 +290,6 @@ class Messages(VK_API):
             return self.result
         self.result['text'] = "Message was sent"
         return self.result
-
 
     @vk_api_log.catch
     def search(self, group_id: int, peer_id: int, count: int) -> dict:
@@ -328,7 +322,7 @@ class Messages(VK_API):
             'peer_id': peer_id,
             'count': count,
             'date': tomorrow,
-            'v':  VK.vk_api.version
+            'v': VK.vk_api.version
         }
         headers = {
             'Authorization': f"Bearer {VK.vk_api.api_key}"
@@ -343,7 +337,6 @@ class Messages(VK_API):
             return self.result
         self.result['text'] = response['response']
         return self.result
-
 
     @vk_api_log.catch
     def delete(self, group_id: int, cm_id: int, peer_id: int) -> dict:
@@ -372,7 +365,7 @@ class Messages(VK_API):
             'cmids': cm_id,
             'peer_id': peer_id,
             'delete_for_all': VK.vk_api.delete_for_all,
-            'v':  VK.vk_api.version
+            'v': VK.vk_api.version
         }
         headers = {
             'Authorization': f"Bearer {VK.vk_api.api_key}"
@@ -406,7 +399,6 @@ class Longpoll(Groups):
         else:
             vk_api_log.error(f"# Get Longpoll server parameters error. {get_lp_server_result['text']}")
 
-
     # GET request to VK LongPoll API to listen for messages
     @vk_api_log.catch
     def listen_longpoll(self) -> dict:
@@ -427,7 +419,6 @@ class Longpoll(Groups):
 
         response = self.do_request('GET', self.lp_server, params = payload, use_ssl = self.use_ssl)
         return response
-
 
     # Listen to VK Longpoll server and manage results
     @vk_api_log.catch
@@ -499,9 +490,9 @@ class Longpoll(Groups):
 
             # If this is new/edited comment
             if response['updates'][0]['type'] == "wall_reply_new" or \
-            response['updates'][0]['type'] == "wall_reply_edit" or \
-            response['updates'][0]['type'] == "photo_comment_new" or \
-            response['updates'][0]['type'] == "photo_comment_edit":
+               response['updates'][0]['type'] == "wall_reply_edit" or \
+               response['updates'][0]['type'] == "photo_comment_new" or \
+               response['updates'][0]['type'] == "photo_comment_edit":
                 lp_res['response'] = response
                 lp_res['response_type'] = "comment"
                 return lp_res
@@ -512,7 +503,6 @@ class Longpoll(Groups):
                 lp_res['response_type'] = "message"
                 return lp_res
             return lp_res
-
 
     @vk_api_log.catch
     def process_longpoll_errors(self, result: dict) -> dict:

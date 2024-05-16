@@ -1,4 +1,4 @@
-# Reviewed: May 08, 2024
+# Reviewed: May 16, 2024
 
 from loguru import logger
 from loguru import logger as vk_proc_log
@@ -9,7 +9,7 @@ from config import VK, Logs
 
 
 class VK_processing:
-    def __init__(self, vk_proc_log: logger = vk_proc_log, debug_enabled: bool = False, # type: ignore
+    def __init__(self, vk_proc_log: logger = vk_proc_log, debug_enabled: bool = False,  # type: ignore
                  send_msg_to_vk: bool = False) -> None:
         """
         VK Processing class init
@@ -23,7 +23,7 @@ class VK_processing:
         :return: Returns the class instance.
         """
 
-        if vk_proc_log == None:
+        if vk_proc_log is None:
             if debug_enabled:
                 vk_proc_log.add(Logs.processing_log, level="DEBUG", format = "{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}")
                 vk_proc_log.debug("# VK Processing class will run in Debug mode.")
@@ -50,7 +50,6 @@ class VK_processing:
         }
         self.send_msg_to_vk = send_msg_to_vk
 
-
     @vk_proc_log.catch
     def replacements(self, text: str) -> str:
         """
@@ -65,15 +64,13 @@ class VK_processing:
         """
 
         # Neccessary replaces in text for further processing
-        replaced = text.replace('.', '[.]')
         replaced = text.replace('\n', ' ')
         replaced = replaced.replace('ё', 'е')
         replaced = replaced.lower()
         return replaced
 
-
     @vk_proc_log.catch
-    def get_username(self, user_id: int) -> str: # type: ignore
+    def get_username(self, user_id: int) -> str:  # type: ignore
         """
         Processing class method to get username and process possible error in the response..
 
@@ -87,11 +84,10 @@ class VK_processing:
         else:
             return username['text']
 
-
     @vk_proc_log.catch
     def filter_response_processing(self, message: str, username: str, group_id: int, isMember: bool,
-                                peer_id: int = None, cm_id: int = None,
-                                attachments: dict = None, false_positive: bool = False) -> None:
+                                   peer_id: int = None, cm_id: int = None,
+                                   attachments: dict = None, false_positive: bool = False) -> None:
         """
         Processing class method to work with filter response.
         I'm suppose to use this method for comments in future, so it's the dedicated function.
@@ -119,45 +115,45 @@ class VK_processing:
         """
 
         filter_result = self.filter.filter_response(message, username, attachments, isMember)
-        vk_proc_log.debug(f"============== Filter response processing =================")
+        vk_proc_log.debug("============== Filter response processing =================")
         vk_proc_log.debug(f"# False positive: {false_positive}")
         vk_proc_log.debug(f"# Filter result: {filter_result}")
 
         # Exit if None
-        if filter_result == None:
+        if filter_result is None:
             return
 
         # If filter returns 0, we should wait for a couple of seconds.
         # Reason: there is no more ID for messages in public chat and we can't
         #    know if message was edited. So we wait for bad bot to edit message and then
         #    through VK API search messages get possibly redacted message and check it once again.
-        if filter_result['result'] in [0, 2] and false_positive == False:
+        if filter_result['result'] in [0, 2] and false_positive is False:
             vk_proc_log.debug(f"# Clear message, wait for {VK.check_delay} seconds and check it once more.")
             sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = self.vk_messages.search(group_id, peer_id, VK.messages_search_count)['text']
             vk_proc_log.debug(f"# Last reply: {last_reply}")
-            last_reply_msg = last_reply['items'][0]['text']
-            last_reply_username = self.get_username(user_id = last_reply['items'][0]['from_id'])
-            last_reply_cm_id = last_reply['items'][0]['conversation_message_id']
-            last_reply_peer_id = last_reply['items'][0]['peer_id']
-            last_reply_attachments = last_reply['items'][0]['attachments']
-            self.filter_response_processing(last_reply_msg, last_reply_username,
-                                            group_id, isMember, last_reply_peer_id,
-                                            last_reply_cm_id, last_reply_attachments, false_positive = True)
+            self.filter_response_processing(last_reply['items'][0]['text'],
+                                            self.get_username(user_id = last_reply['items'][0]['from_id']),
+                                            group_id, isMember, last_reply['items'][0]['peer_id'],
+                                            last_reply['items'][0]['conversation_message_id'],
+                                            last_reply['items'][0]['attachments'],
+                                            false_positive = True)
 
         # If filter returns 1 - we catch something
         if filter_result['result'] == 1:
+            # Compose message for notification
             div = "-----------------------------"
-            msg_main = f"# Message to remove from {username}: '{message}'."
+            msg_main = f"# Message to remove from {username}:\n \
+                        '{message.replace('.', '[.]').replace(':', '[:]')}'."
             words = filter_result['text']
             case = f"# Case: {filter_result['case']}"
             msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
             vk_proc_log.info(msg)
             vk_proc_log.debug(f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}")
+
             delete_result = self.vk_messages.delete(group_id, cm_id, peer_id)
             vk_proc_log.debug(f"# Delete result: {delete_result['text']}")
-
             if delete_result['error'] == 0:
                 vk_proc_log.info("# Message was removed")
                 if self.send_msg_to_vk:
@@ -183,9 +179,8 @@ class VK_processing:
             if self.send_msg_to_vk:
                 vk_proc_log.info(f"# Text: {filter_result['text']}.")
 
-
     @vk_proc_log.catch
-    def message(self, response: dict) -> None: # type: ignore
+    def message(self, response: dict) -> None:  # type: ignore
         """
         Processing class method to process new VK message.
 
@@ -202,19 +197,20 @@ class VK_processing:
         cm_id = response['updates'][0]['object']['message']['conversation_message_id']
         username = self.get_username(user_id)
         # Check if user is in Group. If not - it's suspicious
-        vk_proc_log.debug(f"# Checking if User is in Group")
+        vk_proc_log.debug("# Checking if User is in Group")
         isMember = True
         isMemberRes = self.vk_groups.isMember(user_id = user_id, group_id = VK.vk_api.group_id)
         if isMemberRes['text'] == "0":
-            vk_proc_log.info(f"# Message was sent by User not in Group")
+            vk_proc_log.info("# Message was sent by User not in Group")
             isMember = False
 
         # Kick user notification
         if message == "" and attachments == "":
             try:
                 action_type = response['updates'][0]['object']['message']['action']['type']
-            except:
-                vk_proc_log.error(f"# Can't get Action Type from the response")
+            except Exception:
+                vk_proc_log.error("# Can't get Action Type from the response")
+                raise
             if action_type != "":
                 if action_type == "chat_kick_user":
                     kicked_user_id = response['updates'][0]['object']['message']['action']['member_id']
@@ -237,9 +233,8 @@ class VK_processing:
         # vk_proc_log.debug(f"# Username lang: {detect(username)}. Message lang: {detect(message)}")
         # # End of Tests section # #
 
-
     @vk_proc_log.catch
-    def comment(self, response: dict) -> None: # type: ignore
+    def comment(self, response: dict) -> None:  # type: ignore
         """
         Processing class method to process new VK commentary.
 
