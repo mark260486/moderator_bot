@@ -144,8 +144,7 @@ class VK_processing:
         if filter_result['result'] == 1:
             # Compose message for notification
             div = "-----------------------------"
-            msg_main = f"# Message to remove from {username}:\n \
-                        '{message.replace('.', '[.]').replace(':', '[:]')}'."
+            msg_main = f"# Message to remove from {username}:\n# '{message.replace('.', '[.]').replace(':', '[:]')}'."
             words = filter_result['text']
             case = f"# Case: {filter_result['case']}"
             msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
@@ -170,7 +169,7 @@ class VK_processing:
         # If filter returns 2 - we should get warning to Telegram
         if filter_result['result'] == 2:
             div = "-----------------------------"
-            msg_main = f"# Suspicious message from {username}: '{message}' was found."
+            msg_main = f"# Suspicious message from {username}:\n# '{message.replace('.', '[.]').replace(':', '[:]')}'"
             words = filter_result['text']
             case = f"# Case: {filter_result['case']}"
             # This was made for avoid mess in msg var
