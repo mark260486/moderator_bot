@@ -58,5 +58,4 @@ This set of scripts can strictly moderate VK/Telegram messages in both chats and
     + implement class/functions to work with DB;
     + implement limit to removed messages to get banned;
     + implement Telegram menu buttons to work with DB;
-- Maybe it is worth to make all bot async - in progress;
 - Implement web UI for bot management.
