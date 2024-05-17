@@ -344,6 +344,10 @@ class VK_processing:
         )
         vk_proc_log.debug(f"# Filter result: {filter_result}")
         if filter_result["result"] == 1:
-            vk_proc_log.info(
-                f"# Comment to remove from {username}: '{message}'",
-            )
+            # Compose message for notification
+            div = "-----------------------------"
+            msg_main = f"# Comment to remove from {username}:\n# '{message.replace('.', '[.]').replace(':', '[:]')}'."
+            words = filter_result["text"]
+            case = f"# Case: {filter_result['case']}"
+            msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
+            vk_proc_log.info(msg)
