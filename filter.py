@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 16, 2024
+# Reviewed: May 19, 2024
 from __future__ import annotations
 
 import re
@@ -400,7 +400,7 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for whitelist")
-        for item in Words_DB.whitelist:
+        for item in Words_DB.whitelists.exclusions:
             pattern = r"(\b\S*%s\S*\b)" % item
             match = re.findall(pattern, text_to_check)
             if match:
