@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 19, 2024
+# Reviewed: May 20, 2024
 from __future__ import annotations
 
 import re
@@ -249,7 +249,7 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for english")
-        text_check = re.findall("[A-Za-z].+", text_to_check)
+        text_check = re.findall(r'[A-Za-z].+', text_to_check)
         if text_check:
             return True
         return False
