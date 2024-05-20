@@ -61,11 +61,17 @@ class TLG_processing:
         tlg_proc_log.info(
             f"Message to remove from {message.from_user.first_name}:\n'{text.replace('.', '[.]')}'"
         )
-        await self.bot(DeleteMessage(chat_id=message.chat.id, message_id=message.message_id))
-        await self.bot(SendMessage(
-            chat_id=message.chat.id,
-            text=f"Сообщение от {message.from_user.first_name} было удалено автоматическим фильтром.\nПричина: {result['case']}",
-        ))
+        await self.bot(
+            DeleteMessage(
+                chat_id=message.chat.id, message_id=message.message_id
+            )
+        )
+        await self.bot(
+            SendMessage(
+                chat_id=message.chat.id,
+                text=f"Сообщение от {message.from_user.first_name} было удалено автоматическим фильтром.\nПричина: {result['case']}",
+            )
+        )
 
     @tlg_proc_log.catch
     async def moderate_message(self, message) -> None:
