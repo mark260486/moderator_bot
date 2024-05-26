@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 20, 2024
+# Reviewed: May 26, 2024
 from __future__ import annotations
 
 import re
@@ -132,7 +132,7 @@ class Filter:
         await self.reset_results()
         for attachment in attachments:
             self.filter_log.debug(
-                f"Checking attachment of type {attachment['type']}",
+                f"# Checking attachment of type {attachment['type']}",
             )
             # Links
             if attachment["type"] == "link":
@@ -249,9 +249,10 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for english")
-        text_check = re.findall(r"[A-Za-z].+", text_to_check)
-        if text_check:
-            return True
+        if text_to_check:
+            text_check = re.findall(r'[A-Za-z].+', text_to_check)
+            if text_check:
+                return True
         return False
 
     @filter_log.catch

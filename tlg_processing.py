@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 20, 2024
+# Reviewed: May 26, 2024
 from __future__ import annotations
 
 from aiogram import Bot
@@ -61,17 +61,11 @@ class TLG_processing:
         tlg_proc_log.info(
             f"Message to remove from {message.from_user.first_name}:\n'{text.replace('.', '[.]')}'"
         )
-        await self.bot(
-            DeleteMessage(
-                chat_id=message.chat.id, message_id=message.message_id
-            )
-        )
-        await self.bot(
-            SendMessage(
-                chat_id=message.chat.id,
-                text=f"Сообщение от {message.from_user.first_name} было удалено автоматическим фильтром.\nПричина: {result['case']}",
-            )
-        )
+        await self.bot(DeleteMessage(chat_id=message.chat.id, message_id=message.message_id))
+        await self.bot(SendMessage(
+            chat_id=message.chat.id,
+            text=f"Сообщение от {message.from_user.first_name} было удалено автоматическим фильтром.\nПричина: {result['case']}",
+        ))
 
     @tlg_proc_log.catch
     async def moderate_message(self, message) -> None:
@@ -92,13 +86,13 @@ class TLG_processing:
                 await self.notify_and_remove(message, check_url_result["text"])
 
         tlg_proc_log.debug(
-            f"# Text: {message.text or None}, \
-                Caption: {message.caption or None}, \
-                Name: {message.from_user.first_name}, \
-                Login: {message.from_user.username}, \
-                URLS:{urls}, \
-                Chat ID: {message.chat.id}, \
-                Message ID: {message.message_id}",
+            f"# Text: {message.text or None}, "
+            "Caption: {message.caption or None}, "
+            "Name: {message.from_user.first_name}, "
+            "Login: {message.from_user.username}, "
+            "URLS:{urls}, "
+            "Chat ID: {message.chat.id}, "
+            "Message ID: {message.message_id}"
         )
 
         check_text_result = None
@@ -120,4 +114,4 @@ class TLG_processing:
             if check_text_result["result"] == 1:
                 await self.notify_and_remove(message, check_text_result, text)
         else:
-            tlg_proc_log.debug("No check text result.")
+            tlg_proc_log.debug("# No check text result.")
