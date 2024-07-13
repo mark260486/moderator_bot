@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 26, 2024
+# Reviewed: July 13, 2024
 from __future__ import annotations
 
 from aiogram import Bot
@@ -87,12 +87,12 @@ class TLG_processing:
 
         tlg_proc_log.debug(
             f"# Text: {message.text or None}, "
-            "Caption: {message.caption or None}, "
-            "Name: {message.from_user.first_name}, "
-            "Login: {message.from_user.username}, "
-            "URLS:{urls}, "
-            "Chat ID: {message.chat.id}, "
-            "Message ID: {message.message_id}"
+            f"Caption: {message.caption or None}, "
+            f"Name: {message.from_user.first_name}, "
+            f"Login: {message.from_user.username}, "
+            f"URLS:{urls}, "
+            f"Chat ID: {message.chat.id}, "
+            f"Message ID: {message.message_id}"
         )
 
         check_text_result = None
