@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 26, 2024
+# Reviewed: July 13, 2024
 from __future__ import annotations
 
 import re
@@ -207,6 +207,13 @@ class Filter:
             self.result["text"] = msg
             self.result["case"] = "номер телефона в тексте, вероятно, бот."
 
+        # Check for bank card numbers
+        if await self.check_for_card(text_to_check):
+            msg = f"{username} with {text_to_check} was catched."
+            self.result["result"] = 2
+            self.result["text"] = msg
+            self.result["case"] = "номер банковской карточки в тексте, вероятно, бот."
+
         # Check if message contains mishmash
         if await self.check_for_english(text_to_check):
             msg = f"{username} with {text_to_check} was catched."
@@ -253,6 +260,8 @@ class Filter:
             text_check = re.findall(r'[A-Za-z].+', text_to_check)
             if text_check:
                 return True
+        else:
+            self.filter_log.debug("# Text is None")
         return False
 
     @filter_log.catch
@@ -268,49 +277,51 @@ class Filter:
         """
 
         await self.reset_results()
-        self.filter_log.debug("# Checking text for suspicious words")
-        # If we have more than X words - kill it
-        max_points = Words_DB.blacklists.suspicious_points_limit
-        discovered_words = []
-        for item in Words_DB.blacklists.suspicious_list:
-            pattern = r"(\b\S*%s\S*\b)" % item
-            # Search all occurences in the text
-            matches = re.findall(pattern, text_to_check.lower())
-            if matches:
-                # If there any - check whitelist for every cursed word we did found
-                for match in matches:
-                    if not await self.check_for_whitelist(match):
-                        discovered_words.append(f"{item} in {match}")
+        if text_to_check:
+            self.filter_log.debug("# Checking text for suspicious words")
+            # If we have more than X words - kill it
+            max_points = Words_DB.blacklists.suspicious_points_limit
+            discovered_words = []
+            for item in Words_DB.blacklists.suspicious_list:
+                pattern = r"(\b\S*%s\S*\b)" % item
+                # Search all occurences in the text
+                matches = re.findall(pattern, text_to_check.lower())
+                if matches:
+                    # If there any - check whitelist for every cursed word we did found
+                    for match in matches:
+                        if not await self.check_for_whitelist(match):
+                            discovered_words.append(f"{item} in {match}")
 
-        result_len = 0
-        if discovered_words != []:
-            result_len = len(discovered_words)
-            if not self.isMember:
-                result_len += 1
+            result_len = 0
+            if discovered_words != []:
+                result_len = len(discovered_words)
+                if not self.isMember:
+                    result_len += 1
 
-            if result_len >= max_points:
-                msg = f"Suspicious '{discovered_words}' was found.\nMore than {max_points} suspicious words were found."
-                self.filter_log.debug(f"# {msg}")
-                self.result["result"] = 1
-                self.result["text"] = msg
-                self.result["case"] = (
-                    "подозрительный набор слов, спам, реклама."
-                )
-                return self.result
+                if result_len >= max_points:
+                    msg = f"Suspicious '{discovered_words}' was found.\nMore than {max_points} suspicious words were found."
+                    self.filter_log.debug(f"# {msg}")
+                    self.result["result"] = 1
+                    self.result["text"] = msg
+                    self.result["case"] = (
+                        "подозрительный набор слов, спам, реклама."
+                    )
+                    return self.result
 
-            if result_len > 0 and result_len < max_points:
-                if discovered_words != []:
-                    msg = f"Limit of {max_points} is not exceeded."
-                else:
-                    msg = f"Suspicious '{discovered_words}' was found. Limit of {max_points} is not exceeded."
-                self.filter_log.debug(f"# {msg}")
-                self.result["result"] = 2
-                self.result["text"] = msg
-                self.result["case"] = (
-                    "недостаточно подозрительных слов для удаления сообщения."
-                )
-                return self.result
-
+                if result_len > 0 and result_len < max_points:
+                    if discovered_words != []:
+                        msg = f"Limit of {max_points} is not exceeded."
+                    else:
+                        msg = f"Suspicious '{discovered_words}' was found. Limit of {max_points} is not exceeded."
+                    self.filter_log.debug(f"# {msg}")
+                    self.result["result"] = 2
+                    self.result["text"] = msg
+                    self.result["case"] = (
+                        "недостаточно подозрительных слов для удаления сообщения."
+                    )
+                    return self.result
+        else:
+            self.filter_log.debug("# Text is None")
         self.result["result"] = 0
         return self.result
 
@@ -328,15 +339,18 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for links")
-        for item in Words_DB.blacklists.spam_list:
-            if item in text_to_check.lower().replace(" ", ""):
-                msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
-                self.filter_log.debug(f"# {msg}")
-                self.result["result"] = 1
-                self.result["text"] = msg
-                self.result["case"] = "подозрительная ссылка, реклама."
-                return self.result
-        self.result["result"] = 0
+        if text_to_check:
+            for item in Words_DB.blacklists.spam_list:
+                if item in text_to_check.lower().replace(" ", ""):
+                    msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
+                    self.filter_log.debug(f"# {msg}")
+                    self.result["result"] = 1
+                    self.result["text"] = msg
+                    self.result["case"] = "подозрительная ссылка, реклама."
+                    return self.result
+            self.result["result"] = 0
+        else:
+            self.filter_log.debug("# Text is None")
         return self.result
 
     @filter_log.catch
@@ -351,39 +365,42 @@ class Filter:
         :rtype: ``dict``
         """
 
-        await self.reset_results()
-        self.filter_log.debug("# Checking text for curses")
-        text_to_check.replace("ё", "е")
-        text_to_check.replace("\n", " ")
-        text_to_check = text_to_check.lower()
-        discovered_words = []
-        regex_blacklist = Words_DB.blacklists.regex_list
-        for regex in regex_blacklist:
-            matches = re.search(re.compile(regex), text_to_check)
-            if matches is not None:
-                if not await self.check_for_whitelist(matches.string):
-                    discovered_words.append(
-                        f"{matches.group()} in {matches.string}",
-                    )
-                    self.filter_log.info(f"Regex results: {discovered_words}")
+        if text_to_check:
+            await self.reset_results()
+            self.filter_log.debug("# Checking text for curses")
+            text_to_check = text_to_check.replace("ё", "е")
+            text_to_check = text_to_check.replace("\n", " ")
+            text_to_check = text_to_check.lower()
+            discovered_words = []
+            regex_blacklist = Words_DB.blacklists.regex_list
+            for regex in regex_blacklist:
+                matches = re.search(re.compile(regex), text_to_check)
+                if matches is not None:
+                    if not await self.check_for_whitelist(matches.string):
+                        discovered_words.append(
+                            f"{matches.group()} in {matches.string}",
+                        )
+                        self.filter_log.info(f"Regex results: {discovered_words}")
 
-        for item in Words_DB.blacklists.curses_list:
-            pattern = r"(\b\S*%s\S*\b)" % item
-            # Search all occurences in the text
-            matches = re.findall(pattern, text_to_check.lower())
-            if matches:
-                # If there any - check whitelist for every cursed word we did found
-                for match in matches:
-                    if not await self.check_for_whitelist(match):
-                        discovered_words.append(f"{item} in {match}")
+            for item in Words_DB.blacklists.curses_list:
+                pattern = r"(\b\S*%s\S*\b)" % item
+                # Search all occurences in the text
+                matches = re.findall(pattern, text_to_check.lower())
+                if matches:
+                    # If there any - check whitelist for every cursed word we did found
+                    for match in matches:
+                        if not await self.check_for_whitelist(match):
+                            discovered_words.append(f"{item} in {match}")
 
-        if discovered_words != []:
-            msg = f"Forbidden '{discovered_words}' from curses list was found."
-            self.filter_log.debug(f"# {msg}")
-            self.result["result"] = 1
-            self.result["text"] = msg
-            self.result["case"] = "нецензурные выражения."
-            return self.result
+            if discovered_words != []:
+                msg = f"Forbidden '{discovered_words}' from curses list was found."
+                self.filter_log.debug(f"# {msg}")
+                self.result["result"] = 1
+                self.result["text"] = msg
+                self.result["case"] = "нецензурные выражения."
+                return self.result
+        else:
+            self.filter_log.debug("# Text is None")
         self.result["result"] = 0
         return self.result
 
@@ -401,14 +418,17 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for whitelist")
-        for item in Words_DB.whitelists.exclusions:
-            pattern = r"(\b\S*%s\S*\b)" % item
-            match = re.findall(pattern, text_to_check)
-            if match:
-                self.filter_log.debug(
-                    f"# Whitelist '{item}' was found in '{match}', passing...",
-                )
-                return True
+        if text_to_check:
+            for item in Words_DB.whitelists.exclusions:
+                pattern = r"(\b\S*%s\S*\b)" % item
+                match = re.findall(pattern, text_to_check)
+                if match:
+                    self.filter_log.debug(
+                        f"# Whitelist '{item}' was found in '{match}', passing...",
+                    )
+                    return True
+        else:
+            self.filter_log.debug("# Text is None")
         return False
 
     @filter_log.catch
@@ -424,10 +444,37 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for phones")
-        pattern = (
-            r"\+\d+([!\s\(-_]?)+\d+([!\s\)-_]?)+\d+([ _-]?)+\d+([ _-]?)+\d"
-        )
-        match = re.search(pattern, text_to_check)
-        if match:
-            return match.group()
+        if text_to_check:
+            pattern = (
+                r"\+?[0-9]{1}[ ‑\-]?\d{3}[ ‑\-]?\d{3}[ ‑\-]?\d{2}[ ‑\-]?\d{2}"
+            )
+            match = re.search(pattern, text_to_check)
+            if match:
+                return match.group()
+        else:
+            self.filter_log.debug("# Text is None")
+        return None
+
+    @filter_log.catch
+    async def check_for_card(self, text_to_check):
+        """
+        Filter class method to check text for Bank card numbers - 16 digits.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as Regex match group or None.
+        """
+
+        await self.reset_results()
+        self.filter_log.debug("# Checking text for Bank cards")
+        if text_to_check:
+            pattern = (
+                r"\b\d{16}\b"
+            )
+            match = re.search(pattern, text_to_check)
+            if match:
+                return match.group()
+        else:
+            self.filter_log.debug("# Text is None")
         return None
