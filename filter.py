@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 13, 2024
+# Reviewed: October 03, 2024
 from __future__ import annotations
 
 import re
@@ -60,6 +60,7 @@ class Filter:
         # Result = 1 - true
         # Result = 2 - suspicious
         self.result = {"result": 0, "text": "", "case": ""}
+        self.discovered_words = []
 
     # Message filter. Returns true if message contains anything illegal
     @filter_log.catch
@@ -281,25 +282,18 @@ class Filter:
             self.filter_log.debug("# Checking text for suspicious words")
             # If we have more than X words - kill it
             max_points = Words_DB.blacklists.suspicious_points_limit
-            discovered_words = []
-            for item in Words_DB.blacklists.suspicious_list:
-                pattern = r"(\b\S*%s\S*\b)" % item
-                # Search all occurences in the text
-                matches = re.findall(pattern, text_to_check.lower())
-                if matches:
-                    # If there any - check whitelist for every cursed word we did found
-                    for match in matches:
-                        if not await self.check_for_whitelist(match):
-                            discovered_words.append(f"{item} in {match}")
+
+            await self.regex_check(Words_DB.blacklists.suspisious_regex, text_to_check=text_to_check)
+            await self.word_check(Words_DB.blacklists.suspicious_list, text_to_check=text_to_check)
 
             result_len = 0
-            if discovered_words != []:
-                result_len = len(discovered_words)
+            if self.discovered_words != []:
+                result_len = len(self.discovered_words)
                 if not self.isMember:
                     result_len += 1
 
                 if result_len >= max_points:
-                    msg = f"Suspicious '{discovered_words}' was found.\nMore than {max_points} suspicious words were found."
+                    msg = f"Suspicious '{self.discovered_words}' was found.\nMore than {max_points} suspicious words were found."
                     self.filter_log.debug(f"# {msg}")
                     self.result["result"] = 1
                     self.result["text"] = msg
@@ -309,10 +303,10 @@ class Filter:
                     return self.result
 
                 if result_len > 0 and result_len < max_points:
-                    if discovered_words != []:
+                    if self.discovered_words != []:
                         msg = f"Limit of {max_points} is not exceeded."
                     else:
-                        msg = f"Suspicious '{discovered_words}' was found. Limit of {max_points} is not exceeded."
+                        msg = f"Suspicious '{self.discovered_words}' was found. Limit of {max_points} is not exceeded."
                     self.filter_log.debug(f"# {msg}")
                     self.result["result"] = 2
                     self.result["text"] = msg
@@ -371,29 +365,12 @@ class Filter:
             text_to_check = text_to_check.replace("ё", "е")
             text_to_check = text_to_check.replace("\n", " ")
             text_to_check = text_to_check.lower()
-            discovered_words = []
-            regex_blacklist = Words_DB.blacklists.regex_list
-            for regex in regex_blacklist:
-                matches = re.search(re.compile(regex), text_to_check)
-                if matches is not None:
-                    if not await self.check_for_whitelist(matches.string):
-                        discovered_words.append(
-                            f"{matches.group()} in {matches.string}",
-                        )
-                        self.filter_log.info(f"Regex results: {discovered_words}")
 
-            for item in Words_DB.blacklists.curses_list:
-                pattern = r"(\b\S*%s\S*\b)" % item
-                # Search all occurences in the text
-                matches = re.findall(pattern, text_to_check.lower())
-                if matches:
-                    # If there any - check whitelist for every cursed word we did found
-                    for match in matches:
-                        if not await self.check_for_whitelist(match):
-                            discovered_words.append(f"{item} in {match}")
+            await self.regex_check(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
+            await self.word_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
 
-            if discovered_words != []:
-                msg = f"Forbidden '{discovered_words}' from curses list was found."
+            if self.discovered_words != []:
+                msg = f"Forbidden '{self.discovered_words}' from curses list was found."
                 self.filter_log.debug(f"# {msg}")
                 self.result["result"] = 1
                 self.result["text"] = msg
@@ -478,3 +455,26 @@ class Filter:
         else:
             self.filter_log.debug("# Text is None")
         return None
+
+    @filter_log.catch
+    async def regex_check(self, regex_list, text_to_check):
+        for regex in regex_list:
+            matches = re.search(re.compile(regex), text_to_check)
+            if matches is not None:
+                if not await self.check_for_whitelist(matches.string):
+                    self.discovered_words.append(
+                        f"{matches.group()} in {matches.string}",
+                    )
+                    self.filter_log.info(f"Regex results: {self.discovered_words}")
+
+    @filter_log.catch
+    async def word_check(self, blacklist, text_to_check):
+        for item in blacklist:
+            pattern = r"(\b\S*%s\S*\b)" % item
+            # Search all occurences in the text
+            matches = re.findall(pattern, text_to_check.lower())
+            if matches:
+                # If there any - check whitelist for every cursed word we did found
+                for match in matches:
+                    if not await self.check_for_whitelist(match):
+                        self.discovered_words.append(f"{item} in {match}")

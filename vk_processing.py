@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 16, 2024
+# Reviewed: October 03, 2024
 from __future__ import annotations
 
 from time import sleep
@@ -162,9 +162,10 @@ class VK_processing:
         # Reason: there is no more ID for messages in public chat and we can't
         #    know if message was edited. So we wait for bad bot to edit message and then
         #    through VK API search messages get possibly redacted message and check it once again.
-        if filter_result["result"] in [0, 2] and false_positive is False:
+        # Additional condition is for Message type of the update
+        if filter_result["result"] in [0, 2] and false_positive is False and cm_id is not None:
             vk_proc_log.debug(
-                f"# Clear message, wait for {VK.check_delay} seconds and check it once more.",
+                f"# This was clear message, we'll wait for {VK.check_delay} seconds and check it once more.",
             )
             sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
@@ -192,35 +193,43 @@ class VK_processing:
         if filter_result["result"] == 1:
             # Compose message for notification
             div = "-----------------------------"
+            # update_type = "Message"
+            # if cm_id is not None:
+            #     update_type = "Comment"
             msg_main = f"# Message to remove from {username}:\n# '{message.replace('.', '[.]').replace(':', '[:]')}'."
             words = filter_result["text"]
             case = f"# Case: {filter_result['case']}"
             msg = f"{msg_main}\n{div}\n# {words}\n{div}\n{case}"
             vk_proc_log.info(msg)
-            vk_proc_log.debug(
-                f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}",
-            )
+            # Message remove
+            if cm_id is not None:
+                vk_proc_log.debug(
+                    f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}",
+                )
 
-            delete_result = await self.vk_messages.delete(
-                group_id, cm_id, peer_id
-            )
-            vk_proc_log.debug(f"# Delete result: {delete_result['text']}")
-            if delete_result["error"] == 0:
-                vk_proc_log.info("# Message was removed")
-                if self.send_msg_to_vk:
-                    send_result = await self.vk_messages.send(
-                        f"Сообщение от {username} было удалено автоматическим фильтром. Причина: {filter_result['case']}",
-                        group_id,
-                        peer_id,
-                    )
+                delete_result = await self.vk_messages.delete(
+                    group_id, cm_id, peer_id
+                )
+                vk_proc_log.debug(f"# Delete result: {delete_result['text']}")
+                if delete_result["error"] == 0:
+                    vk_proc_log.info("# Message was removed")
+                    if self.send_msg_to_vk:
+                        send_result = await self.vk_messages.send(
+                            f"Сообщение от {username} было удалено автоматическим фильтром. Причина: {filter_result['case']}",
+                            group_id,
+                            peer_id,
+                        )
+                else:
+                    vk_proc_log.info("# Message was not removed")
+                    if self.send_msg_to_vk:
+                        send_result = await self.vk_messages.send(
+                            f"# Сообщение от {username} не было удалено автоматическим фильтром.",
+                            group_id,
+                            peer_id,
+                        )
+            # Comment remove
             else:
-                vk_proc_log.info("# Message was not removed")
-                if self.send_msg_to_vk:
-                    send_result = await self.vk_messages.send(
-                        f"# Сообщение от {username} не было удалено автоматическим фильтром.",
-                        group_id,
-                        peer_id,
-                    )
+                pass
 
             if self.send_msg_to_vk:
                 if send_result["error"] == 0:
@@ -329,14 +338,7 @@ class VK_processing:
             response["updates"][0]["object"]["text"]
         )
         user_id = response["updates"][0]["object"]["from_id"]
-        username = await self.vk_users.get(user_id)
-        if username["error"] == 1:
-            vk_proc_log.error(
-                f"# Can't get username from ID: {username['text']}",
-            )
-            return False
-        else:
-            username = username["text"]
+        username = await self.get_username(user_id)
 
         vk_proc_log.debug(f"# New/edited comment: {message}; User: {username}")
         filter_result = await self.filter.filter_response(
