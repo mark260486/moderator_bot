@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: October 03, 2024
+# Reviewed: October 20, 2024
 from __future__ import annotations
 
 import re
@@ -461,7 +461,8 @@ class Filter:
         for regex in regex_list:
             matches = re.search(re.compile(regex), text_to_check)
             if matches is not None:
-                if not await self.check_for_whitelist(matches.string):
+                self.filter_log.debug(f"# {matches.group()} in {matches.string}")
+                if not await self.check_for_whitelist(matches.group()):
                     self.discovered_words.append(
                         f"{matches.group()} in {matches.string}",
                     )
