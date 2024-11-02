@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: October 20, 2024
+# Reviewed: October 23, 2024
 from __future__ import annotations
 
 import re
@@ -395,6 +395,7 @@ class Filter:
 
         await self.reset_results()
         self.filter_log.debug("# Checking text for whitelist")
+        self.filter_log.debug(f"# Checking {text_to_check}")
         if text_to_check:
             for item in Words_DB.whitelists.exclusions:
                 pattern = r"(\b\S*%s\S*\b)" % item

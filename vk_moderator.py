@@ -105,5 +105,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    vk_loop = asyncio.get_event_loop()
+    vk_loop.run_until_complete(main())

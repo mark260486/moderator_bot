@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: October 03, 2024
+# Reviewed: November 02, 2024
 from __future__ import annotations
 
 from time import sleep
@@ -167,7 +167,7 @@ class VK_processing:
             vk_proc_log.debug(
                 f"# This was clear message, we'll wait for {VK.check_delay} seconds and check it once more.",
             )
-            sleep(VK.check_delay)
+            await sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = await self.vk_messages.search(
                 group_id,
@@ -176,18 +176,19 @@ class VK_processing:
             )
             last_reply = last_reply["text"]
             vk_proc_log.debug(f"# Last reply: {last_reply}")
-            await self.filter_response_processing(
-                last_reply["items"][0]["text"],
-                await self.get_username(
-                    user_id=last_reply["items"][0]["from_id"]
-                ),
-                group_id,
-                isMember,
-                last_reply["items"][0]["peer_id"],
-                last_reply["items"][0]["conversation_message_id"],
-                last_reply["items"][0]["attachments"],
-                false_positive=True,
-            )
+            if last_reply["items"] != []:
+                await self.filter_response_processing(
+                    last_reply["items"][0]["text"],
+                    await self.get_username(
+                        user_id=last_reply["items"][0]["from_id"]
+                    ),
+                    group_id,
+                    isMember,
+                    last_reply["items"][0]["peer_id"],
+                    last_reply["items"][0]["conversation_message_id"],
+                    last_reply["items"][0]["attachments"],
+                    false_positive=True,
+                )
 
         # If filter returns 1 - we catch something
         if filter_result["result"] == 1:
