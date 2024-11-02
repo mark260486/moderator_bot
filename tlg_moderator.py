@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 29, 2024
+# Reviewed: November 02, 2024
 from __future__ import annotations
 
 import argparse
@@ -16,11 +16,13 @@ from aiogram.client.default import DefaultBotProperties
 
 from config import Telegram
 from tlg_processing import TLG_processing
+from tlg_processing import DB
 
 
 dp = Dispatcher()
 bot = Bot(token=Telegram.tlg_api.api_key, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 global tlg_proc
+global db
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(LEFT >> MEMBER))
@@ -59,12 +61,15 @@ async def unmute_chat_members(event: types.ChatMemberUpdated) -> None:
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> KICKED))
 async def ban_chat_members(event: types.ChatMemberUpdated) -> None:
-    """Announces when someone muted/unmuted"""
+    """Announces when someone banned"""
     logger.debug("# Chat member banned")
     logger.debug(f"# Event: {event}")
-    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.ban_msg
-                          .replace("member_name", event.old_chat_member.user.mention_html())
-                          .replace("cause_name", event.from_user.first_name)))
+    # Removed account ignored
+    if event.old_chat_member.user.first_name != '':
+        await db.remove_user(user_id = event.from_user.id)
+        await bot(SendMessage(chat_id=event.chat.id, text=Telegram.ban_msg
+                              .replace("member_name", event.old_chat_member.user.mention_html())
+                              .replace("cause_name", event.from_user.first_name)))
 
 
 @dp.chat_member()
@@ -82,7 +87,7 @@ async def user_message(event: types.Message) -> None:
     logger.debug(f"# Username: {event.from_user.first_name}, user ID: {event.from_user.id}, text: {event.text}")
     # Filtering
     global tlg_proc
-    await tlg_proc.moderate_message(event)
+    await tlg_proc.moderate_event(event)
 
 
 @logger.catch
@@ -146,6 +151,11 @@ async def main() -> None:
     # Processing and filter
     global tlg_proc
     tlg_proc = await TLG_processing.create(bot=bot, debug_enabled=args.debug_enabled)
+
+    # DB connection
+    global db
+    db = await DB.create()
+
     logger.info("Telegram moderator bot listener re/starting..")
 
     # # # # Start Telegram listener # # # #
