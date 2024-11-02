@@ -167,7 +167,7 @@ class VK_processing:
             vk_proc_log.debug(
                 f"# This was clear message, we'll wait for {VK.check_delay} seconds and check it once more.",
             )
-            await sleep(VK.check_delay)
+            sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = await self.vk_messages.search(
                 group_id,
