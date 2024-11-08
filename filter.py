@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: October 23, 2024
+# Reviewed: November 08, 2024
 from __future__ import annotations
 
 import re
@@ -256,7 +256,7 @@ class Filter:
         """
 
         await self.reset_results()
-        self.filter_log.debug("# Checking text for english")
+        self.filter_log.debug("# Checking for english")
         if text_to_check:
             text_check = re.findall(r'[A-Za-z].+', text_to_check)
             if text_check:
@@ -279,7 +279,7 @@ class Filter:
 
         await self.reset_results()
         if text_to_check:
-            self.filter_log.debug("# Checking text for suspicious words")
+            self.filter_log.debug("# Checking for suspicious words")
             # If we have more than X words - kill it
             max_points = Words_DB.blacklists.suspicious_points_limit
 
@@ -332,7 +332,7 @@ class Filter:
         """
 
         await self.reset_results()
-        self.filter_log.debug("# Checking text for links")
+        self.filter_log.debug("# Checking for links")
         if text_to_check:
             for item in Words_DB.blacklists.spam_list:
                 if item in text_to_check.lower().replace(" ", ""):
@@ -361,7 +361,7 @@ class Filter:
 
         if text_to_check:
             await self.reset_results()
-            self.filter_log.debug("# Checking text for curses")
+            self.filter_log.debug("# Checking for curses")
             text_to_check = text_to_check.replace("ё", "е")
             text_to_check = text_to_check.replace("\n", " ")
             text_to_check = text_to_check.lower()
@@ -393,8 +393,7 @@ class Filter:
         :rtype: ``bool``
         """
 
-        await self.reset_results()
-        self.filter_log.debug("# Checking text for whitelist")
+        self.filter_log.debug("# Checking for whitelist")
         self.filter_log.debug(f"# Checking {text_to_check}")
         if text_to_check:
             for item in Words_DB.whitelists.exclusions:
@@ -421,7 +420,7 @@ class Filter:
         """
 
         await self.reset_results()
-        self.filter_log.debug("# Checking text for phones")
+        self.filter_log.debug("# Checking for phones")
         if text_to_check:
             pattern = (
                 r"\+?[0-9]{1}[ ‑\-]?\d{3}[ ‑\-]?\d{3}[ ‑\-]?\d{2}[ ‑\-]?\d{2}"
@@ -445,7 +444,7 @@ class Filter:
         """
 
         await self.reset_results()
-        self.filter_log.debug("# Checking text for Bank cards")
+        self.filter_log.debug("# Checking for Bank cards")
         if text_to_check:
             pattern = (
                 r"\b\d{16}\b"
@@ -459,24 +458,28 @@ class Filter:
 
     @filter_log.catch
     async def regex_check(self, regex_list, text_to_check):
+        self.filter_log.debug("# Checking with regex")
         for regex in regex_list:
-            matches = re.search(re.compile(regex), text_to_check)
-            if matches is not None:
-                self.filter_log.debug(f"# {matches.group()} in {matches.string}")
-                if not await self.check_for_whitelist(matches.group()):
-                    self.discovered_words.append(
-                        f"{matches.group()} in {matches.string}",
-                    )
-                    self.filter_log.info(f"Regex results: {self.discovered_words}")
+            matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check)
+            if matches != []:
+                self.filter_log.debug(f"# Matches: {matches}")
+                for match in matches:
+                    if not await self.check_for_whitelist(match):
+                        self.discovered_words += matches
+                        self.filter_log.debug(f"# Regex results: {self.discovered_words}")
 
     @filter_log.catch
     async def word_check(self, blacklist, text_to_check):
+        self.filter_log.debug("# Checking with words")
         for item in blacklist:
             pattern = r"(\b\S*%s\S*\b)" % item
             # Search all occurences in the text
             matches = re.findall(pattern, text_to_check.lower())
             if matches:
+                self.filter_log.debug(f"# Matches: {matches}")
                 # If there any - check whitelist for every cursed word we did found
+                self.filter_log.debug(f"# Word check results: {matches}")
                 for match in matches:
                     if not await self.check_for_whitelist(match):
-                        self.discovered_words.append(f"{item} in {match}")
+                        self.discovered_words += matches
+                        self.filter_log.debug(f"# Words results: {self.discovered_words}")
