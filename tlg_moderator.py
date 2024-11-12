@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: November 02, 2024
+# Reviewed: November 12, 2024
 from __future__ import annotations
 
 import argparse
@@ -30,8 +30,8 @@ async def greet_chat_members(event: types.ChatMemberUpdated) -> None:
     """Greets new users in chats"""
     logger.debug("# Greet chat member")
     logger.debug(f"# Event: {event}")
-    logger.debug(f"# Username: {event.from_user.first_name}, user ID: {event.from_user.id}")
-    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.greeting_msg.replace("member_name", event.from_user.mention_html())))
+    logger.debug(f"# Username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
+    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.greeting_msg.replace("member_name", event.new_chat_member.user.mention_html())))
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> LEFT))
