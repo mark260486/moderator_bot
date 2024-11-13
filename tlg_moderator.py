@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-
 from loguru import logger
 from notifiers.logging import NotificationHandler
-from aiogram import Bot, Dispatcher, types
-from aiogram.methods import SendMessage
-from aiogram.types import LinkPreviewOptions
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.methods import SendMessage, RestrictChatMember
+from aiogram.types import LinkPreviewOptions, chat_permissions
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import LEFT, MEMBER, RESTRICTED, KICKED
 from aiogram.filters import ChatMemberUpdatedFilter
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
-
+from datetime import timedelta
 from config import Telegram
 from tlg_processing import TLG_processing
 from tlg_processing import DB
@@ -27,19 +27,28 @@ global db
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(LEFT >> MEMBER))
-async def greet_chat_members(event: types.ChatMemberUpdated) -> None:
+async def chat_members_greet(event: types.ChatMemberUpdated) -> None:
     """Greets new users in chats"""
     logger.debug("# Greet chat member")
     logger.debug(f"# Event: {event}")
     logger.debug(f"# Username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
-    await bot(SendMessage(
-        chat_id=event.chat.id,
-        text=Telegram.greeting_msg.replace("member_name", event.new_chat_member.user.mention_html()),
-        link_preview_options=LinkPreviewOptions(is_disabled=True)))
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(
+        text="Да",
+        callback_data="yes"
+    ))
+    builder.add(types.InlineKeyboardButton(
+        text="Нет",
+        callback_data="no"
+    ))
+    # ToDo:
+    # - Timeout
+    # - Check for user already passed 'captcha' using IDs
+    await event.answer("Вы человек?", reply_markup=builder.as_markup())
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> LEFT))
-async def bye_chat_members(event: types.ChatMemberUpdated) -> None:
+async def chat_members_bye(event: types.ChatMemberUpdated) -> None:
     """Announces when someone leaves"""
     logger.debug("# Chat member leave")
     logger.debug(f"# Event: {event}")
@@ -50,7 +59,7 @@ async def bye_chat_members(event: types.ChatMemberUpdated) -> None:
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> RESTRICTED))
-async def mute_chat_members(event: types.ChatMemberUpdated) -> None:
+async def chat_members_mute(event: types.ChatMemberUpdated) -> None:
     """Announces when someone muted/unmuted"""
     logger.debug("# Chat member muted")
     logger.debug(f"# Event: {event}")
@@ -60,7 +69,7 @@ async def mute_chat_members(event: types.ChatMemberUpdated) -> None:
 
 
 @dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | KICKED) >> MEMBER))
-async def unmute_chat_members(event: types.ChatMemberUpdated) -> None:
+async def chat_members_unmute(event: types.ChatMemberUpdated) -> None:
     """Announces when someone muted/unmuted"""
     logger.debug("# Chat member unmuted")
     logger.debug(f"# Event: {event}")
@@ -70,7 +79,7 @@ async def unmute_chat_members(event: types.ChatMemberUpdated) -> None:
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> KICKED))
-async def ban_chat_members(event: types.ChatMemberUpdated) -> None:
+async def chat_members_ban(event: types.ChatMemberUpdated) -> None:
     """Announces when someone banned"""
     logger.debug("# Chat member banned")
     logger.debug(f"# Event: {event}")
@@ -85,7 +94,8 @@ async def ban_chat_members(event: types.ChatMemberUpdated) -> None:
 @dp.chat_member()
 async def chat_members_transitions(event: types.ChatMemberUpdated) -> None:
     """Other transitions debug"""
-    logger.debug("# Chat member unmuted")
+    # Find filter for automatic unmute. Such type of transition currently does not catched
+    logger.debug("# Chat member transition")
     logger.debug(f"# Event: {event}")
 
 
@@ -98,6 +108,44 @@ async def user_message(event: types.Message) -> None:
     # Filtering
     global tlg_proc
     await tlg_proc.moderate_event(event)
+
+
+@dp.callback_query(F.data == "yes")
+async def human_answer(callback: types.CallbackQuery):
+    """New user pressed Yes in 'Captcha'"""
+    logger.debug("# User pressed 'Yes'")
+    logger.debug(f"# Callback: {callback}")
+    logger.debug(f"# Username: {callback.from_user.first_name}, user ID: {callback.from_user.id}")
+    await bot(SendMessage(
+        chat_id=callback.message.chat.id,
+        text=Telegram.greeting_msg.replace("member_name", callback.from_user.mention_html()),
+        link_preview_options=LinkPreviewOptions(is_disabled=True)))
+    await delete_message(callback)
+
+
+@dp.callback_query(F.data == "no")
+async def not_human_answer(callback: types.CallbackQuery):
+    """New user pressed No in 'Captcha'"""
+    logger.debug("# User pressed 'No'")
+    logger.debug(f"# Callback: {callback}")
+    logger.debug(f"# Username: {callback.from_user.first_name}, user ID: {callback.from_user.id}")
+    await bot(RestrictChatMember(
+        chat_id = callback.message.chat.id,
+        user_id = callback.from_user.id,
+        until_date = timedelta(seconds = 3600),
+        permissions = chat_permissions.ChatPermissions(can_send_messages=False,
+                                                       can_send_polls=False,
+                                                       can_send_other_messages=False,
+                                                       can_send_media_messages=False
+                                                       )))
+    await delete_message(callback)
+
+
+async def delete_message(callback: types.CallbackQuery):
+    """Remove 'Captcha' message"""
+    logger.debug("# Removing 'Captcha' message")
+    logger.debug(f"# Username: {callback.from_user.first_name}, user ID: {callback.from_user.id}")
+    await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
 
 
 @logger.catch
