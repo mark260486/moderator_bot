@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: November 12, 2024
+# Reviewed: November 13, 2024
 from __future__ import annotations
 
 import argparse
@@ -9,6 +9,7 @@ from loguru import logger
 from notifiers.logging import NotificationHandler
 from aiogram import Bot, Dispatcher, types
 from aiogram.methods import SendMessage
+from aiogram.types import LinkPreviewOptions
 from aiogram.filters import LEFT, MEMBER, RESTRICTED, KICKED
 from aiogram.filters import ChatMemberUpdatedFilter
 from aiogram.enums import ParseMode
@@ -31,7 +32,10 @@ async def greet_chat_members(event: types.ChatMemberUpdated) -> None:
     logger.debug("# Greet chat member")
     logger.debug(f"# Event: {event}")
     logger.debug(f"# Username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
-    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.greeting_msg.replace("member_name", event.new_chat_member.user.mention_html())))
+    await bot(SendMessage(
+        chat_id=event.chat.id,
+        text=Telegram.greeting_msg.replace("member_name", event.new_chat_member.user.mention_html()),
+        link_preview_options=LinkPreviewOptions(is_disabled=True)))
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> LEFT))
@@ -40,7 +44,9 @@ async def bye_chat_members(event: types.ChatMemberUpdated) -> None:
     logger.debug("# Chat member leave")
     logger.debug(f"# Event: {event}")
     logger.debug(f"# Username: {event.from_user.first_name}, user ID: {event.from_user.id}")
-    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.leave_msg.replace("member_name", event.from_user.mention_html())))
+    await bot(SendMessage(
+        chat_id=event.chat.id,
+        text=Telegram.leave_msg.replace("member_name", event.from_user.mention_html())))
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> RESTRICTED))
@@ -48,7 +54,9 @@ async def mute_chat_members(event: types.ChatMemberUpdated) -> None:
     """Announces when someone muted/unmuted"""
     logger.debug("# Chat member muted")
     logger.debug(f"# Event: {event}")
-    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.mute_msg.replace("member_name", event.old_chat_member.user.mention_html())))
+    await bot(SendMessage(
+        chat_id=event.chat.id,
+        text=Telegram.mute_msg.replace("member_name", event.old_chat_member.user.mention_html())))
 
 
 @dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | KICKED) >> MEMBER))
@@ -56,7 +64,9 @@ async def unmute_chat_members(event: types.ChatMemberUpdated) -> None:
     """Announces when someone muted/unmuted"""
     logger.debug("# Chat member unmuted")
     logger.debug(f"# Event: {event}")
-    await bot(SendMessage(chat_id=event.chat.id, text=Telegram.unmute_msg_is_member.replace("member_name", event.old_chat_member.user.mention_html())))
+    await bot(SendMessage(
+        chat_id=event.chat.id,
+        text=Telegram.unmute_msg_is_member.replace("member_name", event.old_chat_member.user.mention_html())))
 
 
 @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> KICKED))
