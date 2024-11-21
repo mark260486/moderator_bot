@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: November 02, 2024
+# Reviewed: November 15, 2024
 from __future__ import annotations
 
 from aiogram import Bot
@@ -138,7 +138,7 @@ class TLG_processing:
             f"Login: {event.from_user.username}, "
             f"URLS:{urls}, "
             f"Chat ID: {event.chat.id}, "
-            f"event ID: {event.message_id}"
+            f"Event ID: {event.message_id}"
         )
 
         check_text_result = None
