@@ -8,7 +8,7 @@ import requests
 from loguru import logger
 from loguru import logger as vk_api_log
 
-from config import VK
+from config.vk import VK
 
 
 class VK_API:

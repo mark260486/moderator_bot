@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
-from config import VK
+from config.vk import VK
 
 
 class Groups(VK_API):

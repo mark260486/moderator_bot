@@ -7,7 +7,8 @@ from time import sleep
 from loguru import logger
 from loguru import logger as vk_proc_log
 
-from config import VK, Logs
+from config.vk import VK
+from config.logs import Logs
 from filter import Filter
 from vk.api.groups import Groups
 from vk.api.messages import Messages

@@ -9,7 +9,7 @@ from loguru import logger
 from loguru import logger as tlg_proc_log
 from datetime import timedelta
 
-from config import Logs
+from config.logs import Logs
 from filter import Filter
 from tlg.db.main import DB
 

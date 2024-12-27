@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 24, 2024
+# Reviewed: December 27, 2024
 from __future__ import annotations
 
 import re
@@ -7,7 +7,9 @@ import re
 from loguru import logger
 from loguru import logger as filter_log
 
-from config import Logs, Words_DB, Telegram
+from config.logs import Logs
+from config.words_db import Words_DB
+from config.tlg import Telegram
 
 
 class Filter:

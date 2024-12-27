@@ -8,7 +8,8 @@ import asyncio
 from loguru import logger
 from notifiers.logging import NotificationHandler
 
-from config import VK, Telegram
+from config.vk import VK
+from config.tlg import Telegram
 from vk.api.longpoll import Longpoll
 from vk.processing import VK_processing
 

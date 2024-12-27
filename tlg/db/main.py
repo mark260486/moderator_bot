@@ -10,7 +10,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from config import Logs
+from config.logs import Logs
 
 # DB settings
 CONNECTION_STRING = "sqlite:////home/mark/moderator_bot/telegram.db"

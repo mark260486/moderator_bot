@@ -19,7 +19,7 @@ from aiogram.filters import ChatMemberUpdatedFilter
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from datetime import timedelta
-from config import Telegram
+from config.tlg import Telegram
 from tlg.processing import TLG_processing
 from tlg.db import DB
 
@@ -66,7 +66,7 @@ async def chat_member_greet(event: types.ChatMemberUpdated, state: FSMContext) -
     await event.answer("Вы человек?", reply_markup=builder.as_markup())
     logger.debug("# Waiting for new user input...")
     await state.set_state(captchaDialog.user_answering)
-    await asyncio.sleep(Telegram.captcha_timeout)
+    await asyncio.sleep(Telegram.captcha.timeout)
     # Check if new user still answering and mute forever if is
     user_state = await state.get_state()
     if user_state == "captchaDialog:user_answering":

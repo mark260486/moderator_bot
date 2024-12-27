@@ -6,7 +6,7 @@ import asyncio
 
 from vk.api.groups import Groups
 from vk.api import vk_api_log, VK_API
-from config import VK
+from config.vk import VK
 
 
 class Longpoll(Groups, VK_API):
