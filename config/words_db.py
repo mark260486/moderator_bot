@@ -24,7 +24,7 @@ class Words_DB:
             f"{abc['п']}({abc['и']}|{abc['е']}){abc['з']}{abc['д']}",
         ]
         spam_list = [
-            "@all", "@online", "@все", "alfa", "bit.do", "bit.ly", "bitly.com", "cashback", "clck.ru", "click", "cutt",
+            "@all", "@online", "@все", "bit.do", "bit.ly", "bitly.com", "cashback", "clck.ru", "click", "cutt",
             "decordar.ru", "gclnk.com", "goo.su", "guest.link", "ify.ac", "lnnk", "ls.gd", "nyшkuнc", "nyшkuнс", "ok.me",
             "page.link", "rebrandly", "shorturl.cool", "shrt-l.ink", "t.me", "th.link", "tiktok", "tinyurl", "u.to",
             "vk.cc", "vk.me", "xxxsports.ru", "yurist-forum", "пyшкинc", "пушкинс", "belea.link", "tumblr.com",
