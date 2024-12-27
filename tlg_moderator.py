@@ -7,7 +7,7 @@ import asyncio
 from loguru import logger
 from notifiers.logging import NotificationHandler
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.methods import SendMessage
+from aiogram.methods import SendMessage, GetChatAdministrators
 from aiogram.types import LinkPreviewOptions, chat_permissions
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.state import StatesGroup, State
@@ -19,6 +19,7 @@ from aiogram.filters import ChatMemberUpdatedFilter
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from datetime import timedelta
+
 from config.tlg import Telegram
 from tlg.processing import TLG_processing
 from tlg.db import DB
@@ -29,6 +30,7 @@ bot = Bot(token=Telegram.tlg_api.api_key, default=DefaultBotProperties(parse_mod
 user_id = ""        # Global for User ID in captcha checks
 global tlg_proc     # Telegram processing
 global db           # Database with violating users
+global args         # Arguments to use in some methods
 
 
 class captchaDialog(StatesGroup):
@@ -135,9 +137,20 @@ async def chat_member_transitions(event: types.ChatMemberUpdated) -> None:
 async def moderate_user_message(event: types.Message) -> None:
     """New/edited message"""
     logger.debug("# New/edited message ========================================"[:70])
+    # logger.debug(f"# Event: {event}")
     logger.debug(f"# Username: {event.from_user.first_name}, user ID: {event.from_user.id}, text: {event.text}")
     if event.text is None:
         logger.debug("# User entered chat | User leaved chat")
+    # Check if it's chat admin message and skip it
+    global args
+    if not args.moderate_admins_enabled:
+        logger.debug("# Skip admin messages")
+        admins_list = await get_chat_administrators(chat_id = event.chat.id)
+        if admins_list:
+            logger.debug(f"# Admins: {admins_list}, user ID to search: {event.from_user.id}")
+            if event.from_user.id in admins_list:
+                logger.debug("# Wouldn't moderate this message")
+                return
     # Filtering
     global tlg_proc
     await tlg_proc.moderate_event(event)
@@ -178,6 +191,19 @@ async def callback_handler_human_answer(callback: types.CallbackQuery, state: FS
 
 
 @logger.catch
+async def get_chat_administrators(chat_id: int) -> list:
+    logger.debug("# Get chat administrators ========================================"[:70])
+    admins_list = []
+    admins = await bot(GetChatAdministrators(chat_id = chat_id))
+    logger.debug(f"# Result: {admins}")
+    for admin in admins:
+        admins_list.append(admin.user.id)
+    if admins_list:
+        return admins_list
+    return None
+
+
+@logger.catch
 async def main() -> None:
     """Start the bot."""
     # # # # Parsing args # # # #
@@ -187,22 +213,26 @@ async def main() -> None:
     )
 
     parser.add_argument(
-        "-d",
-        "--debug",
-        dest="debug_enabled",
+        "-d", "--debug", dest="debug_enabled",
         action="store_true",
         default=False,
         required=False,
     )
     parser.add_argument(
-        "-t",
-        "--tlg",
-        dest="send_msg_to_tlg",
+        "-t", "--tlg", dest="send_msg_to_tlg",
         action="store_true",
         help="Send Notification message to moderator Telegram Chat",
         default=False,
         required=False,
     )
+    parser.add_argument(
+        "-m", "--moderate", dest="moderate_admins_enabled",
+        action="store_true",
+        help="If set admins messages shall be checked too",
+        default=False,
+        required=False,
+    )
+    global args
     args = parser.parse_args()
 
     # # # # Logger settings # # # #
