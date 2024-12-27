@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: November 02, 2024
+# Reviewed: December 27, 2024
 from __future__ import annotations
 
 from time import sleep
@@ -9,7 +9,9 @@ from loguru import logger as vk_proc_log
 
 from config import VK, Logs
 from filter import Filter
-from vk_api import Groups, Messages, Users
+from vk.api.groups import Groups
+from vk.api.messages import Messages
+from vk.api.users import Users
 
 
 class VK_processing:

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: November 08, 2024
+# Reviewed: December 24, 2024
 from __future__ import annotations
 
 import re
@@ -7,7 +7,7 @@ import re
 from loguru import logger
 from loguru import logger as filter_log
 
-from config import Logs, Words_DB
+from config import Logs, Words_DB, Telegram
 
 
 class Filter:
@@ -237,6 +237,17 @@ class Filter:
         if suspicious_check_result["result"] > 0:
             return suspicious_check_result
 
+        # Check for scam messages consisting of Telegram prem emoji
+        non_text_check_result = await self.check_for_non_text(
+            text_to_check = text_to_check
+        )
+        if non_text_check_result:
+            msg = f"{username} with {text_to_check} was catched."
+            self.result["result"] = 2
+            self.result["text"] = msg
+            self.result["case"] = "сообщение, состоящее из эмодзи. Вероятно, бот."
+            return self.result
+
         # If user send a picture and user name is in English - warn me
         # if user_check != [] and attachment_flag:
         #     return False, f"# {username} with attachment was catched"
@@ -258,7 +269,7 @@ class Filter:
         await self.reset_results()
         self.filter_log.debug("# Checking for english")
         if text_to_check:
-            text_check = re.findall(r'[A-Za-z].+', text_to_check)
+            text_check = re.findall(r'[A-Za-z].+', text_to_check, re.UNICODE)
             if text_check:
                 return True
         else:
@@ -398,7 +409,7 @@ class Filter:
         if text_to_check:
             for item in Words_DB.whitelists.exclusions:
                 pattern = r"(\b\S*%s\S*\b)" % item
-                match = re.findall(pattern, text_to_check)
+                match = re.findall(pattern, text_to_check, re.UNICODE)
                 if match:
                     self.filter_log.debug(
                         f"# Whitelist '{item}' was found in '{match}', passing...",
@@ -457,10 +468,34 @@ class Filter:
         return None
 
     @filter_log.catch
+    async def check_for_non_text(self, text_to_check) -> bool:
+        """
+        Filter class method to check text consisting of emoji packs by Telegram prem.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as boolean.
+        :rtype: ``bool``
+        """
+
+        await self.reset_results()
+        self.filter_log.debug("# Checking for emoji scam")
+        if text_to_check:
+            text_check = re.search(r'[а-яa-z0-9]+', text_to_check, re.UNICODE)
+            self.filter_log.debug(f"# Text is {text_check}")
+            # if text_check:
+            #     if len(text_check) > Telegram.emoji_length_limit:
+            #         return True
+        else:
+            self.filter_log.debug("# Text is None")
+        return False
+
+    @filter_log.catch
     async def regex_check(self, regex_list, text_to_check):
         self.filter_log.debug("# Checking with regex")
         for regex in regex_list:
-            matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check)
+            matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check.lower(), re.UNICODE)
             if matches != []:
                 self.filter_log.debug(f"# Matches: {matches}")
                 for match in matches:
@@ -474,7 +509,7 @@ class Filter:
         for item in blacklist:
             pattern = r"(\b\S*%s\S*\b)" % item
             # Search all occurences in the text
-            matches = re.findall(pattern, text_to_check.lower())
+            matches = re.findall(pattern, text_to_check.lower(), re.UNICODE)
             if matches:
                 self.filter_log.debug(f"# Matches: {matches}")
                 # If there any - check whitelist for every cursed word we did found

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 16, 2024
+# Reviewed: December 27, 2024
 from __future__ import annotations
 
 import argparse
@@ -9,8 +9,8 @@ from loguru import logger
 from notifiers.logging import NotificationHandler
 
 from config import VK, Telegram
-from vk_api import Longpoll
-from vk_processing import VK_processing
+from vk.api.longpoll import Longpoll
+from vk.processing import VK_processing
 
 
 @logger.catch
@@ -60,7 +60,7 @@ async def main() -> None:
             main_log_file,
             level="DEBUG",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
-            rotation="10 MB",
+            rotation="1 MB",
         )
         logger.debug("# VK moderator will run in Debug mode.")
     else:
@@ -68,7 +68,7 @@ async def main() -> None:
             main_log_file,
             level="INFO",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
-            rotation="10 MB",
+            rotation="1 MB",
         )
     main_log = logger.bind(name="main_log")
 
