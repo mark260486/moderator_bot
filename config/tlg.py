@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: December 28, 2024
 from __future__ import annotations
 
 
@@ -32,6 +32,8 @@ class Telegram:
         question = "`В каком году произошла авария на Чернобыльской АЭС?`"
         answer = ["1986"]
         message = f"Привет, member_name! Мы хотим проверить, что ты не бот. Пожалуйста, ответь на контрольный вопрос за {timeout} секунд:\n{question}"
+        temp_message = f"Привет, member_name!\nПожалуйста, подтверди, что ты человек, в течение {timeout} секунд."
+        temp_button = "Да, я человек"
     log_path = "/var/log/moderator_bot//tlg_moderator.log"
     # log_path = "/var/log/moderator_bot/tlg_moderator.log"
     service_name = "tlg_moderator"

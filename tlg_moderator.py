@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: December 28, 2024
 from __future__ import annotations
 
 import argparse
@@ -47,7 +47,7 @@ async def chat_member_greet(event: types.ChatMemberUpdated, state: FSMContext) -
     # Ask user if use is a human
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(
-        text="Да",
+        text = Telegram.captcha.temp_button,
         callback_data="yes"
     ))
     global user_id
@@ -65,7 +65,7 @@ async def chat_member_greet(event: types.ChatMemberUpdated, state: FSMContext) -
             can_invite_users=False
         )
     )
-    await event.answer("Вы человек?", reply_markup=builder.as_markup())
+    Telegram.captcha.temp_message.replace("member_name", event.new_chat_member.user.first_name),
     logger.debug("# Waiting for new user input...")
     await state.set_state(captchaDialog.user_answering)
     await asyncio.sleep(Telegram.captcha.timeout)
