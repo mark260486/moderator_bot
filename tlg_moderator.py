@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 28, 2024
+# Reviewed: January 08, 2025
 from __future__ import annotations
 
 import argparse
@@ -246,6 +246,7 @@ async def main() -> None:
             level="DEBUG",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
+            retention = 2,
         )
         logger.debug("# Telegram moderator will run in Debug mode.")
     else:
@@ -254,6 +255,7 @@ async def main() -> None:
             level="INFO",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
+            retention = 2,
         )
 
     # Telegram messages logging
