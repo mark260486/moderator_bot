@@ -65,7 +65,8 @@ async def chat_member_greet(event: types.ChatMemberUpdated, state: FSMContext) -
             can_invite_users=False
         )
     )
-    Telegram.captcha.temp_message.replace("member_name", event.new_chat_member.user.first_name),
+    await event.answer(Telegram.captcha.temp_message.replace("member_name", event.new_chat_member.user.first_name),
+                       reply_markup=builder.as_markup())
     logger.debug("# Waiting for new user input...")
     await state.set_state(captchaDialog.user_answering)
     await asyncio.sleep(Telegram.captcha.timeout)
