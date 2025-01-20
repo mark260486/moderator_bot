@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: January 08, 2025
+# Reviewed: January 20, 2025
 from __future__ import annotations
 
 import argparse
@@ -276,7 +276,7 @@ async def main() -> None:
     global db
     db = await DB.create()
 
-    logger.info("Telegram moderator bot listener re/starting..")
+    logger.info("Telegram moderator bot re/starting..")
 
     # # # # Start Telegram listener # # # #
     await dp.start_polling(bot)
