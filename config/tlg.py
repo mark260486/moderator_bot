@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 28, 2024
+# Reviewed: January 20, 2024
 from __future__ import annotations
 
 
@@ -26,6 +26,9 @@ class Telegram:
     unmute_msg_was_member = (
         "member_name вылечивается от молчанки и покидает чат."
     )
+
+    # # # Telegram DB for restricted users
+    tlg_db_path = "/home/my_user/telegram.db"
 
     class captcha:
         timeout = 30

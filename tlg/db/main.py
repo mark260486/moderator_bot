@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: January 20, 2024
 from __future__ import annotations
 
 from loguru import logger
@@ -12,8 +12,10 @@ from sqlalchemy.orm import sessionmaker
 
 from config.logs import Logs
 
+from config.tlg import Telegram
+
 # DB settings
-CONNECTION_STRING = "sqlite:////home/mark/moderator_bot/telegram.db"
+CONNECTION_STRING = f"sqlite:////{Telegram.tlg_db_path}"
 Base = declarative_base()
 
 
