@@ -6,7 +6,6 @@ from __future__ import annotations
 class Telegram:
     class tlg_api:
         api_key = "000000:API_KEY_000"
-        chat_id = "-000000"  # Telegram Chat to moderate.
         # Your Telegram ID to get messages from Moderator Bot.
         log_chat_id = "000000"
         api_url = "https://api.telegram.org/botTLG_KEY/sendMessage"
