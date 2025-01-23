@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: January 20, 2024
+# Reviewed: January 23, 2025
 from __future__ import annotations
 
 
@@ -30,13 +30,27 @@ class Telegram:
     tlg_db_path = "/home/my_user/telegram.db"
 
     class captcha:
+        # This params are designated for chat Captcha
+        enabled = True              # Not implemented yet
+        timeout_enabled = True      # Not implemented yet. Will be there timeout for user's answer to captcha
+        question_enabled = True     # Not implemented yet. If True: answer must question with text, else: just a button to click
         timeout = 30
         question = "`В каком году произошла авария на Чернобыльской АЭС?`"
         answer = ["1986"]
         message = f"Привет, member_name! Мы хотим проверить, что ты не бот. Пожалуйста, ответь на контрольный вопрос за {timeout} секунд:\n{question}"
         temp_message = f"Привет, member_name!\nПожалуйста, подтверди, что ты человек, в течение {timeout} секунд."
         temp_button = "Да, я человек"
-    log_path = "/var/log/moderator_bot//tlg_moderator.log"
+        timeout_message = f"Увы, member_name, {timeout} секунд прошло, ты не успел :("
+
+    class channel_forward:
+        # This params are designated for Telegram chats with topics
+        enabled = True
+        # This is your Chat ID
+        forum_id = 000
+        # This is your Topic ID
+        thread_id = 000
+
+    log_path = "/home/mark/moderator_bot/logs/tlg_moderator.log"
     # log_path = "/var/log/moderator_bot/tlg_moderator.log"
     service_name = "tlg_moderator"
     # This is the limit for scam messages consisting of Telegram premium emoji

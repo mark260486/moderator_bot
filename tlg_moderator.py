@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: January 20, 2025
+# Reviewed: January 23, 2025
 from __future__ import annotations
 
 import argparse
@@ -7,7 +7,7 @@ import asyncio
 from loguru import logger
 from notifiers.logging import NotificationHandler
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.methods import SendMessage, GetChatAdministrators
+from aiogram.methods import SendMessage, CopyMessage, GetChatAdministrators
 from aiogram.types import LinkPreviewOptions, chat_permissions
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.state import StatesGroup, State
@@ -157,6 +157,20 @@ async def moderate_user_message(event: types.Message) -> None:
     await tlg_proc.moderate_event(event)
 
 
+@dp.channel_post()
+@dp.poll()
+async def channel_post(event: types.Message):
+    logger.debug("# New channel post ========================================"[:70])
+    logger.debug(f"# Event: {event}")
+    if Telegram.channel_forward.enabled:
+        await bot(CopyMessage(
+            from_chat_id = event.chat.id,
+            message_id = event.message_id,
+            chat_id = Telegram.channel_forward.forum_id,
+            message_thread_id = Telegram.channel_forward.thread_id
+        ))
+
+
 @dp.callback_query(F.data == "yes")
 async def callback_handler_human_answer(callback: types.CallbackQuery, state: FSMContext):
     """New user pressed Yes in 'Captcha'"""
@@ -196,7 +210,7 @@ async def get_chat_administrators(chat_id: int) -> list:
     logger.debug("# Get chat administrators ========================================"[:70])
     admins_list = []
     admins = await bot(GetChatAdministrators(chat_id = chat_id))
-    logger.debug(f"# Result: {admins}")
+    # logger.debug(f"# Result: {admins}")
     for admin in admins:
         admins_list.append(admin.user.id)
     if admins_list:
