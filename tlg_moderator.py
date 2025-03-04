@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
-# Reviewed: January 23, 2025
+# Reviewed: March 03, 2025
 from __future__ import annotations
 
 import argparse
 import asyncio
 from loguru import logger
 from notifiers.logging import NotificationHandler
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.methods import SendMessage, CopyMessage, GetChatAdministrators
+from aiogram import Bot, Dispatcher, types
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.exceptions import AiogramError
+from aiogram.filters import ChatMemberUpdatedFilter
+from aiogram.filters import LEFT, MEMBER, RESTRICTED, KICKED
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import StatesGroup, State
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.strategy import FSMStrategy
+from aiogram.methods import SendMessage, GetChatAdministrators
 from aiogram.types import LinkPreviewOptions, chat_permissions
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.strategy import FSMStrategy
-from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.filters import LEFT, MEMBER, RESTRICTED, KICKED
-from aiogram.filters import ChatMemberUpdatedFilter
-from aiogram.enums import ParseMode
-from aiogram.client.default import DefaultBotProperties
 from datetime import timedelta
 
 from config.tlg import Telegram
@@ -25,208 +26,140 @@ from tlg.processing import TLG_processing
 from tlg.db import DB
 
 
-dp = Dispatcher(storage=MemoryStorage(), fsm_strategy=FSMStrategy.CHAT)
-bot = Bot(token=Telegram.tlg_api.api_key, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-user_id = ""        # Global for User ID in captcha checks
-global tlg_proc     # Telegram processing
-global db           # Database with violating users
-global args         # Arguments to use in some methods
-
-
 class captchaDialog(StatesGroup):
     user_answering = State()
     user_answered = State()
 
 
-@dp.chat_member(ChatMemberUpdatedFilter(LEFT >> MEMBER))
-async def chat_member_greet(event: types.ChatMemberUpdated, state: FSMContext) -> None:
-    """Greets new users in chats"""
-    logger.debug("# Greet chat member ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-    logger.info(f"# Username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
-    # Ask user if use is a human
-    builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(
-        text = Telegram.captcha.temp_button,
-        callback_data="yes"
-    ))
-    global user_id
-    user_id = event.new_chat_member.user.id
-    # Mute new user till answer
-    logger.debug(f"# New user {event.new_chat_member.user.first_name} was muted until answered to captcha")
-    await bot.restrict_chat_member(
-        chat_id = event.chat.id,
-        user_id = event.new_chat_member.user.id,
-        until_date = timedelta(seconds = 29),   # 29 seconds means forever
-        permissions = chat_permissions.ChatPermissions(
-            can_send_messages=False,
-            can_send_other_messages=False,
-            can_send_media_messages=False,
-            can_invite_users=False
+class ModeratorBot:
+    def __init__(self, bot: Bot, dispatcher: Dispatcher, args: argparse.Namespace):
+        self.bot = bot
+        self.dp = dispatcher
+        self.args = args
+        self.user_id = None
+        self.message_id = None
+        self.tlg_proc = None
+        self.db = None
+
+    async def start(self):
+        self.tlg_proc = await TLG_processing.create(bot=self.bot, debug_enabled=self.args.debug_enabled)
+        self.db = await DB.create()
+        logger.info("Telegram moderator bot re/starting..")
+        await self.dp.start_polling(self.bot)
+
+    async def greet_new_user(self, event: types.ChatMemberUpdated, state: FSMContext):
+        logger.debug("# Greet chat member ========================================"[:70])
+        logger.debug(f"# Event: {event}")
+        logger.info(f"# Username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
+        if Telegram.Captcha.Enabled:
+            await self.handle_captcha(event, state)
+        else:
+            await self.send_greeting(event)
+
+    async def handle_captcha(self, event: types.ChatMemberUpdated, state: FSMContext):
+        builder = InlineKeyboardBuilder()
+        builder.add(types.InlineKeyboardButton(
+            text=Telegram.Captcha.temp_button,
+            callback_data="yes"
+        ))
+        self.user_id = event.new_chat_member.user.id
+        logger.debug(f"# New user {event.new_chat_member.user.first_name} was muted until answered to captcha")
+        await self.bot.restrict_chat_member(
+            chat_id=event.chat.id,
+            user_id=event.new_chat_member.user.id,
+            until_date=timedelta(seconds=29),
+            permissions=chat_permissions.ChatPermissions(
+                can_send_messages=False,
+                can_send_other_messages=False,
+                can_send_media_messages=False,
+                can_invite_users=False
+            )
         )
-    )
-    await event.answer(Telegram.captcha.temp_message.replace("member_name", event.new_chat_member.user.first_name),
-                       reply_markup=builder.as_markup())
-    logger.debug("# Waiting for new user input...")
-    await state.set_state(captchaDialog.user_answering)
-    await asyncio.sleep(Telegram.captcha.timeout)
-    # Check if new user still answering and mute forever if is
-    user_state = await state.get_state()
-    if user_state == "captchaDialog:user_answering":
-        logger.info(f"# Timeout passed. New user {event.new_chat_member.user.id} remains muted. User ID resetted")
-        user_id = 0
-    # await bot.delete_message(chat_id=event.chat.id, message_id=event.message_id)
+        await event.answer(Telegram.Captcha.temp_message.replace("member_name", event.new_chat_member.user.first_name),
+                           reply_markup=builder.as_markup())
+        logger.debug("# Waiting for new user input...")
+        await state.set_state(captchaDialog.user_answering)
+        await asyncio.sleep(Telegram.Captcha.Timeout)
+        user_state = await state.get_state()
+        if user_state == "captchaDialog:user_answering":
+            logger.info(f"# Timeout passed. New user {event.new_chat_member.user.id} remains muted. User ID resetted")
+            self.user_id = None
+            await self.bot.delete_message(chat_id=event.chat.id, message_id=self.message_id + 1)
 
+    async def send_greeting(self, event: types.ChatMemberUpdated):
+        logger.debug("# Sending greet message")
+        try:
+            await self.bot(SendMessage(
+                chat_id=event.message.chat.id,
+                text=Telegram.Messages.Greeting.replace("member_name", event.from_user.mention_html()),
+                link_preview_options=LinkPreviewOptions(is_disabled=True)),
+            )
+        except AiogramError as e:
+            logger.error(f"# Something went wrong: {e}")
 
-@dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | MEMBER) >> LEFT))
-async def chat_member_bye(event: types.ChatMemberUpdated) -> None:
-    """Announces when someone leaves"""
-    logger.debug("# Chat member leave ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-    logger.debug(f"# Username: {event.user.first_name}, user ID: {event.user.id}")
-    await bot(SendMessage(
-        chat_id=event.chat.id,
-        text=Telegram.leave_msg.replace("member_name", event.user.mention_html())))
+    async def announce_user_leave(self, event: types.ChatMemberUpdated):
+        logger.debug("# Chat member leave ========================================"[:70])
+        logger.debug(f"# Event: {event}")
+        logger.debug(f"# Username: {event.user.first_name}, user ID: {event.user.id}")
+        await self.bot(SendMessage(
+            chat_id=event.chat.id,
+            text=Telegram.Messages.Leave.replace("member_name", event.user.mention_html())),
+        )
 
+    async def announce_user_mute(self, event: types.ChatMemberUpdated):
+        if self.user_id == event.old_chat_member.user.id:
+            return
+        logger.debug("# Chat member muted ========================================"[:70])
+        logger.debug(f"# Event: {event}")
+        await self.bot(SendMessage(
+            chat_id=event.chat.id,
+            text=Telegram.Messages.Mute.replace("member_name", event.old_chat_member.user.mention_html())))
 
-@dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> RESTRICTED))
-async def chat_member_mute(event: types.ChatMemberUpdated) -> None:
-    """Announces when someone muted/unmuted"""
-    # If it is new user, do not announce
-    if user_id == event.old_chat_member.user.id:
-        return
-    logger.debug("# Chat member muted ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-    await bot(SendMessage(
-        chat_id=event.chat.id,
-        text=Telegram.mute_msg.replace("member_name", event.old_chat_member.user.mention_html())))
+    async def announce_user_unmute(self, event: types.ChatMemberUpdated):
+        logger.debug("# Chat member unmuted ========================================"[:70])
+        logger.debug(f"# Event: {event}")
+        await self.bot(SendMessage(
+            chat_id=event.chat.id,
+            text=Telegram.Messages.Unmute_is_member.replace("member_name", event.old_chat_member.user.mention_html())))
 
+    async def announce_user_ban(self, event: types.ChatMemberUpdated):
+        logger.debug("# Chat member banned ========================================"[:70])
+        logger.debug(f"# Event: {event}")
+        if event.old_chat_member.user.first_name != '':
+            await self.db.remove_user(user_id=event.from_user.id)
+            await self.bot(SendMessage(chat_id=event.chat.id, text=Telegram.Messages.Ban
+                                       .replace("member_name", event.old_chat_member.user.mention_html())
+                                       .replace("cause_name", event.from_user.first_name)))
 
-@dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | KICKED) >> MEMBER))
-async def chat_member_unmute(event: types.ChatMemberUpdated) -> None:
-    """Announces when someone muted/unmuted"""
-    logger.debug("# Chat member unmuted ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-    await bot(SendMessage(
-        chat_id=event.chat.id,
-        text=Telegram.unmute_msg_is_member.replace("member_name", event.old_chat_member.user.mention_html())))
-
-
-@dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | MEMBER) >> KICKED))
-async def chat_member_ban(event: types.ChatMemberUpdated) -> None:
-    """Announces when someone banned"""
-    logger.debug("# Chat member banned ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-    # Removed account ignored
-    if event.old_chat_member.user.first_name != '':
-        await db.remove_user(user_id = event.from_user.id)
-        await bot(SendMessage(chat_id=event.chat.id, text=Telegram.ban_msg
-                              .replace("member_name", event.old_chat_member.user.mention_html())
-                              .replace("cause_name", event.from_user.first_name)))
-
-
-@dp.chat_member()
-async def chat_member_transitions(event: types.ChatMemberUpdated) -> None:
-    """Other transitions debug"""
-    # Find filter for automatic unmute. Such type of transition currently does not catched
-    logger.debug("# Chat member transition ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-
-
-@dp.message()
-@dp.edited_message()
-async def moderate_user_message(event: types.Message) -> None:
-    """New/edited message"""
-    logger.debug("# New/edited message ========================================"[:70])
-    # logger.debug(f"# Event: {event}")
-    logger.debug(f"# Username: {event.from_user.first_name}, user ID: {event.from_user.id}, text: {event.text}")
-    if event.text is None:
-        logger.debug("# User entered chat | User leaved chat")
-    # Check if it's chat admin message and skip it
-    global args
-    if not args.moderate_admins_enabled:
-        logger.debug("# Skip admin messages")
-        admins_list = await get_chat_administrators(chat_id = event.chat.id)
-        if admins_list:
-            logger.debug(f"# Admins: {admins_list}, user ID to search: {event.from_user.id}")
-            if event.from_user.id in admins_list:
+    async def moderate_user_message(self, event: types.Message):
+        logger.debug("# New/edited message ========================================"[:70])
+        logger.debug(f"# Event: {event}")
+        logger.debug(f"# Username: {event.from_user.first_name}, user ID: {event.from_user.id}, text: {event.text}")
+        if not self.args.moderate_admins_enabled:
+            logger.debug("# Skip admin messages")
+            admins_list = await self.get_chat_administrators(chat_id=event.chat.id)
+            if admins_list and event.from_user.id in admins_list:
                 logger.debug("# Wouldn't moderate this message")
                 return
-    # Filtering
-    global tlg_proc
-    await tlg_proc.moderate_event(event)
+        if event.from_user.id == self.user_id and event.text is None:
+            logger.debug(f"# This is empty message about new user join. Message ID: {event.message_id}")
+            self.message_id = event.message_id
+        await self.tlg_proc.moderate_event(event)
+
+    async def get_chat_administrators(self, chat_id: int) -> list:
+        logger.debug("# Get chat administrators ========================================"[:70])
+        admins_list = []
+        admins = await self.bot(GetChatAdministrators(chat_id=chat_id))
+        for admin in admins:
+            admins_list.append(admin.user.id)
+        return admins_list if admins_list else None
 
 
-@dp.channel_post()
-@dp.poll()
-async def channel_post(event: types.Message):
-    logger.debug("# New channel post ========================================"[:70])
-    logger.debug(f"# Event: {event}")
-    if Telegram.channel_forward.enabled:
-        await bot(CopyMessage(
-            from_chat_id = event.chat.id,
-            message_id = event.message_id,
-            chat_id = Telegram.channel_forward.forum_id,
-            message_thread_id = Telegram.channel_forward.thread_id
-        ))
-
-
-@dp.callback_query(F.data == "yes")
-async def callback_handler_human_answer(callback: types.CallbackQuery, state: FSMContext):
-    """New user pressed Yes in 'Captcha'"""
-    logger.info(f"# User {callback.from_user.first_name}, user ID: {callback.from_user.id} pressed 'Yes'")
-    # Check for user ID in 'Captcha' test
-    # user_id = dp.storage.get_data(user_storage_key)['user']
-    logger.debug(f"# User ID to compare with: {user_id}")
-    # logger.debug(f"# User ID pressed button: {user_id}")
-    if user_id != callback.from_user.id:
-        await callback.answer("Это не ваша кнопка :)", show_alert=True)
-        logger.debug("# This is not new user")
-        return
-    logger.debug(f"# Callback: {callback}")
-    logger.debug(f"# Username: {callback.from_user.first_name}, user ID: {callback.from_user.id}")
-    await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
-    logger.info(f"# New user {callback.from_user.first_name} was unmuted after captcha test")
-    await state.set_state(captchaDialog.user_answered)
-    await bot.restrict_chat_member(
-        chat_id = callback.message.chat.id,
-        user_id = callback.from_user.id,
-        until_date = timedelta(seconds = 45),   # Unmute user
-        permissions = chat_permissions.ChatPermissions(
-            can_send_messages=True,
-            can_send_other_messages=True,
-            can_send_media_messages=True,
-            can_invite_users=True
-        )
-    )
-    await bot(SendMessage(
-        chat_id=callback.message.chat.id,
-        text=Telegram.greeting_msg.replace("member_name", callback.from_user.mention_html()),
-        link_preview_options=LinkPreviewOptions(is_disabled=True)))
-
-
-@logger.catch
-async def get_chat_administrators(chat_id: int) -> list:
-    logger.debug("# Get chat administrators ========================================"[:70])
-    admins_list = []
-    admins = await bot(GetChatAdministrators(chat_id = chat_id))
-    # logger.debug(f"# Result: {admins}")
-    for admin in admins:
-        admins_list.append(admin.user.id)
-    if admins_list:
-        return admins_list
-    return None
-
-
-@logger.catch
 async def main() -> None:
-    """Start the bot."""
-    # # # # Parsing args # # # #
     parser = argparse.ArgumentParser(
         prog="Telegram Moderator bot",
         description="This script can strictly moderate Telegram chats",
     )
-
     parser.add_argument(
         "-d", "--debug", dest="debug_enabled",
         action="store_true",
@@ -247,21 +180,16 @@ async def main() -> None:
         default=False,
         required=False,
     )
-    global args
     args = parser.parse_args()
 
-    # # # # Logger settings # # # #
-    # Need to remove default logger settings
     logger.remove()
-
-    # Logging params
     if args.debug_enabled:
         logger.add(
             Telegram.log_path,
             level="DEBUG",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
-            retention = 2,
+            retention=2,
         )
         logger.debug("# Telegram moderator will run in Debug mode.")
     else:
@@ -270,10 +198,9 @@ async def main() -> None:
             level="INFO",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
-            retention = 2,
+            retention=2,
         )
 
-    # Telegram messages logging
     if args.send_msg_to_tlg:
         tg_params = {
             "token": Telegram.tlg_api.api_key,
@@ -282,18 +209,36 @@ async def main() -> None:
         tg_handler = NotificationHandler("telegram", defaults=tg_params)
         logger.add(tg_handler, format="{message}", level="INFO")
 
-    # Processing and filter
-    global tlg_proc
-    tlg_proc = await TLG_processing.create(bot=bot, debug_enabled=args.debug_enabled)
+    bot = Bot(token=Telegram.tlg_api.api_key, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    dp = Dispatcher(storage=MemoryStorage(), fsm_strategy=FSMStrategy.CHAT)
+    moderator_bot = ModeratorBot(bot, dp, args)
 
-    # DB connection
-    global db
-    db = await DB.create()
+    @dp.chat_member(ChatMemberUpdatedFilter(LEFT >> MEMBER))
+    async def chat_member_greet(event: types.ChatMemberUpdated, state: FSMContext):
+        await moderator_bot.greet_new_user(event, state)
 
-    logger.info("Telegram moderator bot re/starting..")
+    @dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | MEMBER) >> LEFT))
+    async def chat_member_bye(event: types.ChatMemberUpdated):
+        await moderator_bot.announce_user_leave(event)
 
-    # # # # Start Telegram listener # # # #
-    await dp.start_polling(bot)
+    @dp.chat_member(ChatMemberUpdatedFilter(MEMBER >> RESTRICTED))
+    async def chat_member_mute(event: types.ChatMemberUpdated):
+        await moderator_bot.announce_user_mute(event)
+
+    @dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | KICKED) >> MEMBER))
+    async def chat_member_unmute(event: types.ChatMemberUpdated):
+        await moderator_bot.announce_user_unmute(event)
+
+    @dp.chat_member(ChatMemberUpdatedFilter((RESTRICTED | MEMBER) >> KICKED))
+    async def chat_member_ban(event: types.ChatMemberUpdated):
+        await moderator_bot.announce_user_ban(event)
+
+    @dp.message()
+    @dp.edited_message()
+    async def moderate_user_message(event: types.Message):
+        await moderator_bot.moderate_user_message(event)
+
+    await moderator_bot.start()
 
 if __name__ == "__main__":
     asyncio.run(main())
