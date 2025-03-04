@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 04, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
@@ -9,7 +9,7 @@ from config.vk import VK
 class Groups(VK_API):
     # To avoid async __init__
     @classmethod
-    async def create(cls, result: dict = None, use_ssl: bool = True) -> None:
+    async def create(cls, result: dict = None, use_ssl: bool = True) -> Groups:
         """
         VK API Groups subclass init
 
@@ -17,11 +17,11 @@ class Groups(VK_API):
         """
         self = cls()
         self.use_ssl = use_ssl
-        self.result = result
+        self.result = result or {}
         return self
 
     @vk_api_log.catch
-    async def isMember(self, user_id: int, group_id: int) -> dict:
+    async def is_member(self, user_id: int, group_id: int) -> dict:
         """
         VK API class method to find if user is in Group.
         https://dev.vk.com/ru/method/groups.isMember
@@ -52,11 +52,13 @@ class Groups(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        self.result["text"] = str(response["response"])
-        return self.result
+        if response:
+            self.result["text"] = str(response["response"])
+            return self.result
+        return None
 
     @vk_api_log.catch
-    async def getLongPollServer(self) -> dict:
+    async def get_long_poll_server(self) -> dict:
         """
         VK API class method to get LongPoll server parameters.
         https://dev.vk.com/ru/method/groups.getLongPollServer
@@ -82,13 +84,14 @@ class Groups(VK_API):
         )
         if "error" in response.keys():
             try:
-                msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+                msg = (
+                    f"[VK ERROR] Response: error code - {response['error']['error_code']}, "
+                    f"description: {response['error']['error_msg']}"
+                )
                 self.result["text"] = msg
                 self.result["error"] = 1
             except Exception:
-                self.result["text"] = (
-                    "Cannot get neccessary keys from VK API response."
-                )
+                self.result["text"] = "Cannot get neccessary keys from VK API response."
                 self.result["error"] = 1
                 raise
             return self.result

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 04, 2025
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +12,13 @@ from config.vk import VK
 class Longpoll(Groups, VK_API):
     # To avoid async __init__
     @classmethod
-    async def create(cls, use_ssl: bool = True) -> None:
+    async def create(cls, use_ssl: bool = True) -> Longpoll:
+        """
+        VK API Longpoll subclass init
+
+        :return: Returns the class instance.
+        """
+
         self = cls()
         # Longpoll params init
         self.lp_key = ""
@@ -22,14 +28,16 @@ class Longpoll(Groups, VK_API):
         # self.vk_groups = Groups()
         # Get Longpoll server parameters
         vk_api_log.debug("# Get LongPoll server parameters to listen")
-        get_lp_server_result = await self.getLongPollServer()
-        if get_lp_server_result["error"] != 1:
-            vk_api_log.debug(f"# {get_lp_server_result['text']}")
-        else:
-            vk_api_log.error(
-                f"# Get Longpoll server parameters error. {get_lp_server_result['text']}",
-            )
-        return self
+        get_lp_server_result = await self.get_long_poll_server()
+        if get_lp_server_result:
+            if get_lp_server_result["error"] != 1:
+                vk_api_log.debug(f"# {get_lp_server_result['text']}")
+            else:
+                vk_api_log.error(
+                    f"# Get Longpoll server parameters error. {get_lp_server_result['text']}",
+                )
+            return self
+        return None
 
     # GET request to VK LongPoll API to listen for messages
     @vk_api_log.catch
@@ -72,9 +80,7 @@ class Longpoll(Groups, VK_API):
         # reset if next request is OK
         errors_limit = VK.errors_limit
         wait_period = VK.wait_period
-        vk_api_log.debug(
-            "# Start to listen LongPoll API. Errors counter was resetted",
-        )
+        vk_api_log.debug("# Start to listen LongPoll API. Errors counter was resetted")
         lp_res = {
             "errors_counter": 0,
             "response": "",
@@ -103,9 +109,7 @@ class Longpoll(Groups, VK_API):
                 # In case of warning we count to ERRORS_LIMIT and then stop
                 lp_res["errors_counter"] += 1
                 vk_api_log.debug(f"# {process_result['text']}")
-                vk_api_log.debug(
-                    f"# Errors counter: {lp_res['errors_counter']}",
-                )
+                vk_api_log.debug(f"# Errors counter: {lp_res['errors_counter']}")
                 if lp_res["errors_counter"] == errors_limit:
                     msg = "# Errors limit is over. Shut down."
                     vk_api_log.error(msg)
@@ -126,9 +130,7 @@ class Longpoll(Groups, VK_API):
             )
             lp_res["errors_counter"] = 0
             if response["updates"] == []:
-                vk_api_log.debug(
-                    "# Listening interval passed, nothing new. Proceeding...",
-                )
+                vk_api_log.debug("# Listening interval passed, nothing new. Proceeding...")
                 return lp_res
             # Process response with message
             self.lp_ts = response["ts"]

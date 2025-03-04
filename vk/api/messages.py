@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 03, 2024
 from __future__ import annotations
 
 import random
@@ -12,7 +12,7 @@ from config.vk import VK
 class Messages(VK_API):
     # To avoid async __init__
     @classmethod
-    async def create(cls, use_ssl: bool = True) -> None:
+    async def create(cls, use_ssl: bool = True) -> Messages:
         """
         VK API Messages subclass init
 
@@ -60,14 +60,7 @@ class Messages(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        if "error" in response["response"][0].keys():
-            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
-            vk_api_log.error(msg)
-            self.result["text"] = msg
-            self.result["error"] = 1
-            return self.result
-        self.result["text"] = "Message was sent"
-        return self.result
+        return self.process_response(response, "Message was sen")
 
     @vk_api_log.catch
     async def search(self, group_id: int, peer_id: int, count: int) -> dict:
@@ -113,14 +106,7 @@ class Messages(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        if "error" in response["response"].keys():
-            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
-            vk_api_log.error(msg)
-            self.result["text"] = msg
-            self.result["error"] = 1
-            return self.result
-        self.result["text"] = response["response"]
-        return self.result
+        return self.process_response(response, response["response"])
 
     @vk_api_log.catch
     async def delete(self, group_id: int, cm_id: int, peer_id: int) -> dict:
@@ -159,17 +145,10 @@ class Messages(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        if "error" in response["response"][0].keys():
-            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
-            vk_api_log.error(msg)
-            self.result["text"] = msg
-            self.result["error"] = 1
-            return self.result
-        self.result["text"] = "Message was deleted"
-        return self.result
+        return self.process_response(response, "Message was deleted")
 
     @vk_api_log.catch
-    async def removeChatUser(self, group_id: int, user_id: int, member_id: int) -> dict:
+    async def remove_chat_user(self, group_id: int, user_id: int, member_id: int) -> dict:
         """
         VK API class method to remove user from the chat.
         https://dev.vk.com/en/method/messages.removeChatUser
@@ -204,11 +183,4 @@ class Messages(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        if "error" in response["response"][0].keys():
-            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
-            vk_api_log.error(msg)
-            self.result["text"] = msg
-            self.result["error"] = 1
-            return self.result
-        self.result["text"] = "User was removed"
-        return self.result
+        return self.process_response(response, "User was removed")

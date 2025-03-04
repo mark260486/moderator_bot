@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 04, 2025
 from __future__ import annotations
 
 from time import sleep
+from typing import Optional, Dict
 
 from loguru import logger
 from loguru import logger as vk_proc_log
@@ -57,7 +58,7 @@ class VK_processing:
         else:
             self.vk_proc_log = vk_proc_log
 
-        # Neccesary instances
+        # Necessary instances
         self.filter = await Filter.create(debug_enabled=debug_enabled)
         self.vk_groups = await Groups.create()
         self.vk_messages = await Messages.create()
@@ -84,28 +85,25 @@ class VK_processing:
         :rtype: ``str``
         """
 
-        # Neccessary replaces in text for further processing
-        replaced = text.replace("\n", " ")
-        replaced = replaced.replace("ё", "е")
-        replaced = replaced.lower()
+        replaced = text.replace("\n", " ").replace("ё", "е").lower()
         return replaced
 
     @vk_proc_log.catch
-    async def get_username(self, user_id: int) -> str:  # type: ignore
+    async def get_username(self, user_id: int) -> str:
         """
-        Processing class method to get username and process possible error in the response..
+        Processing class method to get username and process possible error in the response.
 
         :type user_id: ``int``
         :param user_id: User ID.
+
+        :return: Returns the username.
+        :rtype: ``str``
         """
         username = await self.vk_users.get(user_id=user_id)
         if username["error"] == 1:
-            vk_proc_log.error(
-                f"# Can't get username from ID: {username['text']}",
-            )
+            vk_proc_log.error(f"# Can't get username from ID: {username['text']}")
             return "Can't get username"
-        else:
-            return username["text"]
+        return username["text"]
 
     @vk_proc_log.catch
     async def filter_response_processing(
@@ -113,10 +111,10 @@ class VK_processing:
         message: str,
         username: str,
         group_id: int,
-        isMember: bool,
-        peer_id: int = None,
-        cm_id: int = None,
-        attachments: dict = None,
+        is_member: bool,
+        peer_id: Optional[int] = None,
+        cm_id: Optional[int] = None,
+        attachments: Optional[Dict] = None,
         false_positive: bool = False,
     ) -> None:
         """
@@ -132,16 +130,16 @@ class VK_processing:
         :type group_id: ``int``
         :param group_id: Group ID.
 
-        :type isMember: ``bool``
-        :param isMember: Is user member of the public. True by default.
+        :type is_member: ``bool``
+        :param is_member: Is user member of the public. True by default.
 
-        :type peer_id: ``int``
+        :type peer_id: ``Optional[int]``
         :param peer_id: Peer ID. It is Int chat ID.
 
-        :type cm_id: ``int``
+        :type cm_id: ``Optional[int]``
         :param cm_id: Conversation message ID.
 
-        :type attachments: ``dict``
+        :type attachments: ``Optional[Dict]``
         :param attachments: Message attachments, if they are.
         """
 
@@ -149,11 +147,9 @@ class VK_processing:
             message,
             username,
             attachments,
-            isMember,
+            is_member,
         )
-        vk_proc_log.debug(
-            "============== Filter response processing =================",
-        )
+        vk_proc_log.debug("============== Filter response processing =================")
         vk_proc_log.debug(f"# False positive: {false_positive}")
         vk_proc_log.debug(f"# Filter result: {filter_result}")
 
@@ -166,10 +162,8 @@ class VK_processing:
         #    know if message was edited. So we wait for bad bot to edit message and then
         #    through VK API search messages get possibly redacted message and check it once again.
         # Additional condition is for Message type of the update
-        if filter_result["result"] in [0, 2] and false_positive is False and cm_id is not None:
-            vk_proc_log.debug(
-                f"# This was clear message, we'll wait for {VK.check_delay} seconds and check it once more.",
-            )
+        if filter_result["result"] in [0, 2] and not false_positive and cm_id is not None:
+            vk_proc_log.debug(f"# This was clear message, we'll wait for {VK.check_delay} seconds and check it once more.")
             sleep(VK.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = await self.vk_messages.search(
@@ -186,7 +180,7 @@ class VK_processing:
                         user_id=last_reply["items"][0]["from_id"]
                     ),
                     group_id,
-                    isMember,
+                    is_member,
                     last_reply["items"][0]["peer_id"],
                     last_reply["items"][0]["conversation_message_id"],
                     last_reply["items"][0]["attachments"],
@@ -207,9 +201,7 @@ class VK_processing:
             vk_proc_log.info(msg)
             # Message remove
             if cm_id is not None:
-                vk_proc_log.debug(
-                    f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}",
-                )
+                vk_proc_log.debug(f"# Group ID: {group_id}, CM ID: {cm_id}, Peer ID: {peer_id}")
 
                 delete_result = await self.vk_messages.delete(
                     group_id, cm_id, peer_id
@@ -254,7 +246,7 @@ class VK_processing:
                 vk_proc_log.info(f"# Text: {filter_result['text']}.")
 
     @vk_proc_log.catch
-    async def message(self, response: dict) -> None:  # type: ignore
+    async def message(self, response: dict) -> None:
         """
         Processing class method to process new VK message.
 
@@ -263,49 +255,38 @@ class VK_processing:
         """
 
         vk_proc_log.debug("# Processing message")
-        message = await self.replacements(
-            response["updates"][0]["object"]["message"]["text"],
-        )
-        attachments = response["updates"][0]["object"]["message"][
-            "attachments"
-        ]
+        message = await self.replacements(response["updates"][0]["object"]["message"]["text"])
+        attachments = response["updates"][0]["object"]["message"]["attachments"]
         user_id = response["updates"][0]["object"]["message"]["from_id"]
         group_id = response["updates"][0]["group_id"]
         peer_id = response["updates"][0]["object"]["message"]["peer_id"]
-        cm_id = response["updates"][0]["object"]["message"][
-            "conversation_message_id"
-        ]
+        cm_id = response["updates"][0]["object"]["message"]["conversation_message_id"]
         username = await self.get_username(user_id)
         # Check if user is in Group. If not - it's suspicious
         vk_proc_log.debug("# Checking if User is in Group")
-        isMember = True
-        isMemberRes = await self.vk_groups.isMember(
+        is_member = True
+        is_memberRes = await self.vk_groups.is_member(
             user_id=user_id,
             group_id=VK.vk_api.group_id,
         )
-        if isMemberRes["text"] == "0":
-            vk_proc_log.info("# Message was sent by User not in Group")
-            isMember = False
+        if is_memberRes:
+            if is_memberRes["text"] == "0":
+                vk_proc_log.info("# Message was sent by User not in Group")
+                is_member = False
 
         # Kick user notification
         if message == "" and attachments == "":
             try:
-                action_type = response["updates"][0]["object"]["message"][
-                    "action"
-                ]["type"]
+                action_type = response["updates"][0]["object"]["message"]["action"]["type"]
             except Exception:
                 vk_proc_log.error("# Can't get Action Type from the response")
                 raise
             if action_type != "":
                 if action_type == "chat_kick_user":
-                    kicked_user_id = response["updates"][0]["object"][
-                        "message"
-                    ]["action"]["member_id"]
+                    kicked_user_id = response["updates"][0]["object"]["message"]["action"]["member_id"]
                     kicked_username = await self.vk_users.get(kicked_user_id)
                     if kicked_username["error"] == 1:
-                        vk_proc_log.error(
-                            f"# Can't get username from ID: {kicked_username['text']}",
-                        )
+                        vk_proc_log.error(f"# Can't get username from ID: {kicked_username['text']}")
                     else:
                         kicked_username = kicked_username["text"]
                         msg = f"# {username} kicked {kicked_username} from {VK.chats[str(peer_id)]}"
@@ -320,7 +301,7 @@ class VK_processing:
             peer_id=peer_id,
             cm_id=cm_id,
             attachments=attachments,
-            isMember=isMember,
+            is_member=is_member,
         )
 
         # # Tests section # #
@@ -329,7 +310,7 @@ class VK_processing:
         # # End of Tests section # #
 
     @vk_proc_log.catch
-    async def comment(self, response: dict) -> None:  # type: ignore
+    async def comment(self, response: dict) -> None:
         """
         Processing class method to process new VK commentary.
 
@@ -338,16 +319,12 @@ class VK_processing:
         """
 
         vk_proc_log.debug("# Processing comment")
-        message = await self.replacements(
-            response["updates"][0]["object"]["text"]
-        )
+        message = await self.replacements(response["updates"][0]["object"]["text"])
         user_id = response["updates"][0]["object"]["from_id"]
         username = await self.get_username(user_id)
 
         vk_proc_log.debug(f"# New/edited comment: {message}; User: {username}")
-        filter_result = await self.filter.filter_response(
-            message, username, [], True
-        )
+        filter_result = await self.filter.filter_response(message, username, [], True)
         vk_proc_log.debug(f"# Filter result: {filter_result}")
         if filter_result["result"] == 1:
             # Compose message for notification

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 03, 2025
 from __future__ import annotations
 
 from aiogram import Bot
@@ -63,23 +63,26 @@ class TLG_processing:
 
     @tlg_proc_log.catch
     async def mute_user(self, event, result, text) -> None:
+        """Mute user and notify"""
         # Remove message
         await self.bot(DeleteMessage(chat_id=event.chat.id, message_id=event.message_id))
 
         # Add to DB and mute
-        await self.db.add_user(user_id = event.from_user.id)
-        await self.db.increase_violations(user_id = event.from_user.id)
-        user = await self.db.get_user(user_id = event.from_user.id)
+        await self.db.add_user(user_id=event.from_user.id)
+        await self.db.increase_violations(user_id=event.from_user.id)
+        user = await self.db.get_user(user_id=event.from_user.id)
         if user:
             await self.bot(RestrictChatMember(
-                chat_id = event.chat.id,
-                user_id = event.from_user.id,
-                until_date = timedelta(seconds = 3600 * int(user.violations)),
-                permissions = chat_permissions.ChatPermissions(can_send_messages=False,
-                                                               can_send_polls=False,
-                                                               can_send_other_messages=False,
-                                                               can_send_media_messages=False
-                                                               )))
+                chat_id=event.chat.id,
+                user_id=event.from_user.id,
+                until_date=timedelta(seconds=3600 * int(user.violations)),
+                permissions=chat_permissions.ChatPermissions(
+                    can_send_messages=False,
+                    can_send_polls=False,
+                    can_send_other_messages=False,
+                    can_send_media_messages=False
+                )
+            ))
         # Notify
             # Compose message for notification
             div = "-----------------------------"
@@ -97,47 +100,34 @@ class TLG_processing:
     async def moderate_event(self, event) -> None:
         """Moderate event"""
 
-        urls = []
+        urls = [entity.url for entity in event.entities] if event.entities else []
 
-        if event.entities:
-            for entity in event.entities:
-                urls.append(entity.url)
-
-        if urls != []:
-            for url in urls:
-                check_url_result = await self.filter.check_for_links(url)
-
+        for url in urls:
+            check_url_result = await self.filter.check_for_links(url)
             tlg_proc_log.debug(f"# Filter result: {check_url_result}")
+
+        if check_url_result:
             if check_url_result["result"] == 1:
-                await self.mute_user(event = event, result = check_url_result["text"])
+                await self.mute_user(event=event, result=check_url_result["text"])
 
         tlg_proc_log.debug(
             f"# Text: {event.text or None}, "
             f"Caption: {event.caption or None}, "
             f"Name: {event.from_user.first_name}, "
             f"Login: {event.from_user.username}, "
-            f"URLS:{urls}, "
+            f"URLS: {urls}, "
             f"Chat ID: {event.chat.id}, "
             f"Event ID: {event.message_id}"
         )
 
         check_text_result = None
-        if event.text:
-            check_text_result = await self.filter.check_text(
-                event.text,
-                event.from_user.username,
-            )
-            text = event.text
-        if event.caption:
-            check_text_result = await self.filter.check_text(
-                event.caption,
-                event.from_user.username,
-            )
-            text = event.caption
+        text = event.text or event.caption
+        if text:
+            check_text_result = await self.filter.check_text(text, event.from_user.username)
 
         if check_text_result:
             tlg_proc_log.debug(f"# Filter result: {check_text_result}")
             if check_text_result["result"] == 1:
-                await self.mute_user(event = event, result = check_text_result, text = text)
+                await self.mute_user(event=event, result=check_text_result, text=text)
         else:
             tlg_proc_log.debug("# No check text result.")

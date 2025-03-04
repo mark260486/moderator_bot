@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 04, 2025
 from __future__ import annotations
 
 import json
@@ -18,7 +18,7 @@ class VK_API:
         cls,
         vk_api_log: logger = vk_api_log,  # type: ignore
         debug_enabled: bool = False,
-    ) -> None:
+    ) -> VK_API:
         """
         VK API class init
 
@@ -88,8 +88,8 @@ class VK_API:
         :rtype: ``dict``
         """
 
-        vk_api_log.debug("============== Do request ================")
         await self.reset_result()
+        vk_api_log.debug("============== Do request ================")
         vk_api_log.debug(f"# Requesting for: {url}")
         try:
             response = requests.request(
@@ -115,7 +115,11 @@ class VK_API:
             res = json.loads(response.text)
             vk_api_log.debug(f"# Response text: {res}")
             if "error" in res.keys():
-                msg = f"[VK ERROR] Response: error code - {response['error']['error_code']}, description: {response['error']['error_msg']}"
+                msg = (
+                    f"[VK ERROR] Response: error code - {response['error']['error_code']}, "
+                    f"description: {response['error']['error_msg']}"
+                )
+                vk_api_log.error(msg)
                 return msg
             return res
         except ValueError as exception:
@@ -130,3 +134,34 @@ class VK_API:
 
         vk_api_log.debug("# Reset result")
         self.result = {"text": "", "error": 0}
+
+    @vk_api_log.catch
+    def process_response(self, response: dict, message: str) -> dict:
+        """
+        Process the response from VK API.
+
+        :type response: ``dict``
+        :param response: Response from VK API.
+
+        :type message: ``str``
+        :param message: Success message to return if no errors.
+
+        :return: Returns the processed result.
+        :rtype: ``dict``
+        """
+
+        vk_api_log.debug("============== Process response ================")
+        if "error" in response.keys():
+            msg = (
+                f"[VK ERROR] Response: error code - {response['error']['error_code']}, "
+                f"description: {response['error']['error_msg']}"
+            )
+            vk_api_log.error(msg)
+            self.result["text"] = msg
+            self.result["error"] = 1
+            return self.result
+
+        self.result["text"] = message
+        self.result["error"] = 0
+        vk_api_log.debug(f"# {self.result}")
+        return self.result

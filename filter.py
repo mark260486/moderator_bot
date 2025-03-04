@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 03, 2025
 from __future__ import annotations
 
 import re
@@ -15,7 +15,7 @@ from config.tlg import Telegram
 class Filter:
     # To avoid async __init__
     @classmethod
-    async def create(cls, filter_log: logger = filter_log, debug_enabled: bool = False) -> None:  # type: ignore
+    async def create(cls, filter_log: logger = filter_log, debug_enabled: bool = False) -> Filter:  # type: ignore
         """
         Filter class init
 
@@ -49,12 +49,12 @@ class Filter:
             self.filter_log = filter_log
         else:
             self.filter_log = filter_log
-        self.isMember = True
+        self.is_member = True
         await self.reset_results()
         return self
 
     @filter_log.catch
-    async def reset_results(self):
+    async def reset_results(self) -> None:
         """
         Filter class method to reset filter results before every check.
         """
@@ -71,7 +71,7 @@ class Filter:
         text: str,
         username: str,
         attachments: str,
-        isMember: bool,
+        is_member: bool,
     ) -> dict:
         """
         Filter class method to filter provided text and/or attachments.
@@ -85,8 +85,8 @@ class Filter:
         :type attachments: ``str``
         :param attachments: Attachments to check.
 
-        :type isMember: ``bool``
-        :param isMember: Is user member of the public.
+        :type is_member: ``bool``
+        :param is_member: Is user member of the public.
 
         :return: Returns the result as dictionary.
         :rtype: ``dict``
@@ -96,9 +96,9 @@ class Filter:
             "================ Filter response ==================",
         )
         self.filter_log.debug("# Filtering response")
-        # Set isMember
-        if isMember is not None:
-            self.isMember = isMember
+        # Set is_member
+        if is_member is not None:
+            self.is_member = is_member
         # Attachments checks
         check_attachments_result = await self.check_attachments(
             attachments, username
@@ -168,7 +168,7 @@ class Filter:
         return self.result
 
     @filter_log.catch
-    async def check_text(self, text_to_check, username) -> dict:
+    async def check_text(self, text_to_check: str, username: str) -> dict:
         """
         Filter class method to check text.
 
@@ -196,7 +196,7 @@ class Filter:
         ) and await self.check_for_english(
             username,
         ):
-            msg = f"{username} with {text_to_check} was catched."
+            msg = f"{username} with {text_to_check} was caught."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = (
@@ -205,21 +205,21 @@ class Filter:
 
         # Check for phone numbers
         if await self.check_for_phone(text_to_check):
-            msg = f"{username} with {text_to_check} was catched."
+            msg = f"{username} with {text_to_check} was caught."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "номер телефона в тексте, вероятно, бот."
 
         # Check for bank card numbers
         if await self.check_for_card(text_to_check):
-            msg = f"{username} with {text_to_check} was catched."
+            msg = f"{username} with {text_to_check} was caught."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "номер банковской карточки в тексте, вероятно, бот."
 
         # Check if message contains mishmash
         if await self.check_for_english(text_to_check):
-            msg = f"{username} with {text_to_check} was catched."
+            msg = f"{username} with {text_to_check} was caught."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "сообщение на латинице, вероятно, бот."
@@ -244,7 +244,7 @@ class Filter:
             text_to_check = text_to_check
         )
         if non_text_check_result:
-            msg = f"{username} with {text_to_check} was catched."
+            msg = f"{username} with {text_to_check} was caught."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "сообщение, состоящее из эмодзи. Вероятно, бот."
@@ -252,12 +252,12 @@ class Filter:
 
         # If user send a picture and user name is in English - warn me
         # if user_check != [] and attachment_flag:
-        #     return False, f"# {username} with attachment was catched"
+        #     return False, f"# {username} with attachment was caught"
         self.result["result"] = 0
         return self.result
 
     @filter_log.catch
-    async def check_for_english(self, text_to_check) -> bool:
+    async def check_for_english(self, text_to_check: str) -> bool:
         """
         Filter class method to check text for containing Latinic.
 
@@ -279,7 +279,7 @@ class Filter:
         return False
 
     @filter_log.catch
-    async def check_for_suspicious_words(self, text_to_check) -> dict:
+    async def check_for_suspicious_words(self, text_to_check: str) -> dict:
         """
         Filter class method to check text for suspicious words from according list.
 
@@ -302,7 +302,7 @@ class Filter:
             result_len = 0
             if self.discovered_words != []:
                 result_len = len(self.discovered_words)
-                if not self.isMember:
+                if not self.is_member:
                     result_len += 1
 
                 if result_len >= max_points:
@@ -333,7 +333,7 @@ class Filter:
         return self.result
 
     @filter_log.catch
-    async def check_for_links(self, text_to_check) -> dict:
+    async def check_for_links(self, text_to_check: str) -> dict:
         """
         Filter class method to check text for links from Spam list.
 
@@ -361,7 +361,7 @@ class Filter:
         return self.result
 
     @filter_log.catch
-    async def check_for_curses(self, text_to_check) -> dict:
+    async def check_for_curses(self, text_to_check: str) -> dict:
         """
         Filter class method to check text for Curses from according list.
 
@@ -375,9 +375,7 @@ class Filter:
         if text_to_check:
             await self.reset_results()
             self.filter_log.debug("# Checking for curses")
-            text_to_check = text_to_check.replace("ё", "е")
-            text_to_check = text_to_check.replace("\n", " ")
-            text_to_check = text_to_check.lower()
+            text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
 
             await self.regex_check(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
             await self.word_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
@@ -395,7 +393,7 @@ class Filter:
         return self.result
 
     @filter_log.catch
-    async def check_for_whitelist(self, text_to_check):
+    async def check_for_whitelist(self, text_to_check: str):
         """
         Filter class method to verify possible false cases of Curses check.
 
@@ -422,7 +420,7 @@ class Filter:
         return False
 
     @filter_log.catch
-    async def check_for_phone(self, text_to_check):
+    async def check_for_phone(self, text_to_check: str):
         """
         Filter class method to check text for Phone numbers.
 
@@ -446,7 +444,7 @@ class Filter:
         return None
 
     @filter_log.catch
-    async def check_for_card(self, text_to_check):
+    async def check_for_card(self, text_to_check: str):
         """
         Filter class method to check text for Bank card numbers - 16 digits.
 
@@ -470,7 +468,7 @@ class Filter:
         return None
 
     @filter_log.catch
-    async def check_for_non_text(self, text_to_check) -> bool:
+    async def check_for_non_text(self, text_to_check: str) -> bool:
         """
         Filter class method to check text consisting of emoji packs by Telegram prem.
 
@@ -494,7 +492,7 @@ class Filter:
         return False
 
     @filter_log.catch
-    async def regex_check(self, regex_list, text_to_check):
+    async def regex_check(self, regex_list, text_to_check: str):
         self.filter_log.debug("# Checking with regex")
         for regex in regex_list:
             matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check.lower(), re.UNICODE)

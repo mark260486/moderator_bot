@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 03, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
@@ -9,7 +9,7 @@ from config.vk import VK
 class Users(VK_API):
     # To avoid async __init__
     @classmethod
-    async def create(cls, use_ssl: bool = True) -> None:
+    async def create(cls, use_ssl: bool = True) -> Users:
         """
         VK API Users subclass init
 
@@ -37,6 +37,7 @@ class Users(VK_API):
         vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
         payload = {"user_ids": user_id, "v": VK.vk_api.version}
         headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+
         response = await self.do_request(
             "GET",
             vk_api_url,
@@ -48,7 +49,10 @@ class Users(VK_API):
             self.result["text"] = VK.public_name
             return self.result
         if "error" in response["response"][0].keys():
-            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
+            msg = (
+                f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, "
+                f"description: {response['response'][0]['error']['description']}"
+            )
             vk_api_log.error(msg)
             self.result["text"] = msg
             self.result["error"] = 1

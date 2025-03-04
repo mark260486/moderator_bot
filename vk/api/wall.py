@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: March 03, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
@@ -9,13 +9,19 @@ from config.vk import VK
 class Wall(VK_API):
     # To avoid async __init__
     @classmethod
-    async def create(cls, use_ssl: bool = True) -> None:
+    async def create(cls, use_ssl: bool = True) -> Wall:
+        """
+        VK API Wall subclass init
+
+        :return: Returns the class instance.
+        """
+
         self = cls()
         self.use_ssl = use_ssl
         return self
 
     @vk_api_log.catch
-    async def deleteComment(self, owner_id, comment_id) -> dict:
+    async def deleteComment(self, owner_id: int, comment_id: int) -> dict:
         """
         VK API class method to delete comment.
         https://dev.vk.com/ru/method/wall.deleteComment
@@ -45,11 +51,4 @@ class Wall(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        if "error" in response["response"][0].keys():
-            msg = f"[VK ERROR] Response: error code - {response['response'][0]['error']['code']}, description: {response['response'][0]['error']['description']}"
-            vk_api_log.error(msg)
-            self.result["text"] = msg
-            self.result["error"] = 1
-            return self.result
-        self.result["text"] = "Comment was deleted"
-        return self.result
+        return self.process_response(response, "Comment was removed")
