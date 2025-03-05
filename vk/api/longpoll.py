@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 04, 2025
+# Reviewed: March 05, 2025
 from __future__ import annotations
 
 import asyncio
@@ -177,7 +177,7 @@ class Longpoll(Groups, VK_API):
                 "[VK WARNING] API Key is deprecated. Need to get new with 'groups.getLongPollServer'."
             )
             self.result["error"] = 0
-            await self.getLongPollServer()
+            await self.get_long_poll_server()
         if result["failed"] == 3:
             self.result["text"] = (
                 "[VK WARNING] Information is lost. Need to get new API Key and TS with 'groups.getLongPollServer'."
@@ -188,7 +188,7 @@ class Longpoll(Groups, VK_API):
                 "[VK WARNING] Incorrect version of VK API was passed."
             )
             self.result["error"] = 0
-            await self.getLongPollServer()
+            await self.get_long_poll_server()
         if self.result["text"] == "":
             self.result["text"] = (
                 "[GENERAL ERROR] Something went wrong during VK request managing."
