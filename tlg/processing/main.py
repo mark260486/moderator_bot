@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 03, 2025
+# Reviewed: March 05, 2025
 from __future__ import annotations
 
 from aiogram import Bot
@@ -55,9 +55,9 @@ class TLG_processing:
         self.filter = await Filter.create(debug_enabled=debug_enabled)
         self.db = await DB.create(debug_enabled=debug_enabled)
 
-        # Result = 0 - false
-        # Result = 1 - true
-        # Result = 2 - suspicious
+        # Result=0 - false
+        # Result=1 - true
+        # Result=2 - suspicious
         self.result = {"result": 0, "text": "", "case": ""}
         return self
 
@@ -102,6 +102,7 @@ class TLG_processing:
 
         urls = [entity.url for entity in event.entities] if event.entities else []
 
+        check_url_result = None
         for url in urls:
             check_url_result = await self.filter.check_for_links(url)
             tlg_proc_log.debug(f"# Filter result: {check_url_result}")
