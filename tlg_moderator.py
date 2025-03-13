@@ -50,7 +50,7 @@ class ModeratorBot:
     async def greet_new_user(self, event: types.ChatMemberUpdated, state: FSMContext):
         logger.debug("# Greet chat member ========================================"[:70])
         logger.debug(f"# Event: {event}")
-        logger.info(f"# Joining: username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
+        logger.info(f"# Joining username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
         if Telegram.Captcha.Enabled:
             await self.handle_captcha(event, state)
         else:
@@ -93,26 +93,28 @@ class ModeratorBot:
                 logger.error(f"# Something went wrong: {e}")
 
     async def send_greeting(self, event: types.ChatMemberUpdated):
-        try:
-            await self.bot(SendMessage(
-                chat_id=event.chat.id,
-                text=Telegram.Messages.Greeting.replace("member_name", event.new_chat_member.user.mention_html()),
-                link_preview_options=LinkPreviewOptions(is_disabled=True)),
-            )
-        except AiogramError as e:
-            logger.error(f"# Something went wrong: {e}")
+        if self.is_supergroup(event):
+            try:
+                await self.bot(SendMessage(
+                    chat_id=event.chat.id,
+                    text=Telegram.Messages.Greeting.replace("member_name", event.new_chat_member.user.mention_html()),
+                    link_preview_options=LinkPreviewOptions(is_disabled=True)),
+                )
+            except AiogramError as e:
+                logger.error(f"# Something went wrong: {e}")
 
     async def announce_user_leave(self, event: types.ChatMemberUpdated):
         logger.debug("# Chat member leave ========================================"[:70])
         logger.debug(f"# Event: {event}")
-        logger.info(f"# Leaving: username: {event.old_chat_member.user.first_name}, user ID: {event.old_chat_member.user.id}")
-        try:
-            await self.bot(SendMessage(
-                chat_id=event.chat.id,
-                text=Telegram.Messages.Leave.replace("member_name", event.old_chat_member.user.mention_html())),
-            )
-        except AiogramError as e:
-            logger.error(f"# Something went wrong: {e}")
+        logger.info(f"# Leaving username: {event.old_chat_member.user.first_name}, user ID: {event.old_chat_member.user.id}")
+        if self.is_supergroup(event):
+            try:
+                await self.bot(SendMessage(
+                    chat_id=event.chat.id,
+                    text=Telegram.Messages.Leave.replace("member_name", event.old_chat_member.user.mention_html())),
+                )
+            except AiogramError as e:
+                logger.error(f"# Something went wrong: {e}")
 
     async def announce_user_mute(self, event: types.ChatMemberUpdated):
         if self.user_id == event.old_chat_member.user.id:
@@ -170,6 +172,12 @@ class ModeratorBot:
         for admin in admins:
             admins_list.append(admin.user.id)
         return admins_list if admins_list else None
+
+    def is_supergroup(self, event) -> bool:
+        logger.debug("# Check if user join/leave supergroup ========================================"[:70])
+        if event.chat.type == "supergroup":
+            return True
+        return False
 
 
 async def main() -> None:
