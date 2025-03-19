@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 04, 2025
+# Reviewed: March 19, 2025
 from __future__ import annotations
 
 import json
@@ -116,8 +116,8 @@ class VK_API:
             vk_api_log.debug(f"# Response text: {res}")
             if "error" in res.keys():
                 msg = (
-                    f"[VK ERROR] Response: error code - {response['error']['error_code']}, "
-                    f"description: {response['error']['error_msg']}"
+                    f"[VK ERROR] Response: error code - {res['error']['error_code']}, "
+                    f"description: {res['error']['error_msg']}"
                 )
                 vk_api_log.error(msg)
                 return msg
