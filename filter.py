@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 03, 2025
+# Reviewed: March 20, 2025
 from __future__ import annotations
 
 import re
@@ -404,8 +404,7 @@ class Filter:
         :rtype: ``bool``
         """
 
-        self.filter_log.debug("# Checking for whitelist")
-        self.filter_log.debug(f"# Checking {text_to_check}")
+        self.filter_log.debug(f"# Checking for whitelist: {text_to_check}")
         if text_to_check:
             for item in Words_DB.whitelists.exclusions:
                 pattern = r"(\b\S*%s\S*\b)" % item
@@ -417,6 +416,7 @@ class Filter:
                     return True
         else:
             self.filter_log.debug("# Text is None")
+        self.filter_log.debug("# No whitelist items found")
         return False
 
     @filter_log.catch
@@ -493,25 +493,25 @@ class Filter:
 
     @filter_log.catch
     async def regex_check(self, regex_list, text_to_check: str):
-        self.filter_log.debug("# Checking with regex")
+        self.filter_log.debug("# Checking with regex list")
         for regex in regex_list:
-            matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check.lower(), re.UNICODE)
-            if matches != []:
-                self.filter_log.debug(f"# Matches: {matches}")
-                for match in matches:
-                    if not await self.check_for_whitelist(match):
-                        self.discovered_words += matches
-                        self.filter_log.debug(f"# Regex results: {self.discovered_words}")
+            match = re.match(f'\\b\\w*{regex}\\w*\\b', text_to_check.lower(), re.UNICODE)
+            if match is not None:
+                self.filter_log.debug(f"# Regex matches: {match.group()}")
+                if not await self.check_for_whitelist(match.group()):
+                    self.discovered_words.append(match.group())
+                    self.filter_log.debug(f"# Regex results: {self.discovered_words}")
+                    return
 
     @filter_log.catch
     async def word_check(self, blacklist, text_to_check):
-        self.filter_log.debug("# Checking with words")
+        self.filter_log.debug("# Checking with words list")
         for item in blacklist:
             pattern = r"(\b\S*%s\S*\b)" % item
             # Search all occurences in the text
             matches = re.findall(pattern, text_to_check.lower(), re.UNICODE)
             if matches:
-                self.filter_log.debug(f"# Matches: {matches}")
+                self.filter_log.debug(f"# Words matches: {matches}")
                 # If there any - check whitelist for every cursed word we did found
                 self.filter_log.debug(f"# Word check results: {matches}")
                 for match in matches:
