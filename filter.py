@@ -200,7 +200,7 @@ class Filter:
         """
 
         await self.reset_results()
-        self.filter_log.debug(f"# Checking text: {text_to_check}")
+        self.filter_log.debug(f"# # Checking text: {text_to_check}")
 
         # Spam list check
         spam_list_check = await self.check_for_links(text_to_check)
@@ -309,12 +309,14 @@ class Filter:
 
         await self.reset_results()
         if text_to_check:
-            self.filter_log.debug("# Checking for suspicious words")
+            self.filter_log.debug("# # Checking for suspicious words")
             # If we have more than X words - kill it
             max_points = Words_DB.blacklists.suspicious_points_limit
+            text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
 
-            await self.regex_check_findall(Words_DB.blacklists.suspisious_regex, text_to_check=text_to_check)
-            await self.word_check(Words_DB.blacklists.suspicious_list, text_to_check=text_to_check)
+            await self.regex_check_findall(Words_DB.blacklists.suspicious_regex, text_to_check=text_to_check)
+            if self.discovered_words == []:
+                await self.word_check(Words_DB.blacklists.suspicious_list, text_to_check=text_to_check)
 
             result_len = 0
             if self.discovered_words != []:
@@ -391,14 +393,13 @@ class Filter:
 
         if text_to_check:
             await self.reset_results()
-            self.filter_log.debug("# Checking for curses")
+            self.filter_log.debug("# # Checking for curses")
             text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
             self.filter_log.debug(f"# Text after replacement: {text_to_check}")
 
             await self.regex_check_findall(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
-            self.filter_log.debug(f"# Discovered words with regex: {self.discovered_words}")
-            await self.word_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
-            self.filter_log.debug(f"# Discovered words with check: {self.discovered_words}")
+            if self.discovered_words == []:
+                await self.word_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
 
             if self.discovered_words != []:
                 msg = f"Forbidden '{self.discovered_words}' from curses list was found."
@@ -530,6 +531,7 @@ class Filter:
             matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check, re.UNICODE)
             if matches:
                 self.filter_log.debug(f"# Regex matches: {matches}")
+                self.filter_log.debug(f"# Regex: {regex}")
                 for match in matches:
                     if not await self.check_for_whitelist(match):
                         self.discovered_words.append(match)
@@ -541,7 +543,7 @@ class Filter:
         self.filter_log.debug("# Checking with words list")
         for item in blacklist:
             # Search all occurences in the text
-            matches = re.findall(f'\\b\\w*{item}\\w*\\b', text_to_check, re.UNICODE)
+            matches = re.findall(f'\\w*{item}\\w*', text_to_check, re.UNICODE)
             if matches:
                 self.filter_log.debug(f"# Words matches: {matches}")
                 # If there any - check whitelist for every cursed word we did found
