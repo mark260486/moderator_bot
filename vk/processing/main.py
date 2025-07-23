@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 04, 2025
+# Reviewed: March 20, 2025
 from __future__ import annotations
 
 from time import sleep
@@ -271,7 +271,7 @@ class VK_processing:
         )
         if is_memberRes:
             if is_memberRes["text"] == "0":
-                vk_proc_log.info("# Message was sent by User not in Group")
+                vk_proc_log.info("# Message was sent by non subscribed User. Plus one suspicious point.")
                 is_member = False
 
         # Kick user notification

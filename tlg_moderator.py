@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 13, 2025
+# Reviewed: May 05, 2025
 from __future__ import annotations
 
 import argparse
@@ -160,6 +160,9 @@ class ModeratorBot:
             if admins_list and event.from_user.id in admins_list:
                 logger.debug("# Wouldn't moderate this message")
                 return
+        if event.from_user.id == 777000:
+            logger.debug("# Skip Telegram messages")
+            return
         if event.from_user.id == self.user_id and event.text is None:
             logger.debug(f"# This is empty message about new user join. Message ID: {event.message_id}")
             self.message_id = event.message_id

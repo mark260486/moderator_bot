@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 04, 2025
+# Reviewed: July 03, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
@@ -82,21 +82,13 @@ class Groups(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        if "error" in response.keys():
-            try:
-                msg = (
-                    f"[VK ERROR] Response: error code - {response['error']['error_code']}, "
-                    f"description: {response['error']['error_msg']}"
-                )
-                self.result["text"] = msg
-                self.result["error"] = 1
-            except Exception:
-                self.result["text"] = "Cannot get neccessary keys from VK API response."
-                self.result["error"] = 1
-                raise
+        if isinstance(response, dict):
+            self.lp_server = response["response"]["server"]
+            self.lp_key = response["response"]["key"]
+            self.lp_ts = response["response"]["ts"]
+            self.result["text"] = "Longpoll server parameters were received"
             return self.result
-        self.lp_server = response["response"]["server"]
-        self.lp_key = response["response"]["key"]
-        self.lp_ts = response["response"]["ts"]
-        self.result["text"] = "Longpoll server parameters were received"
-        return self.result
+        else:
+            self.result["text"] = "Cannot get Longpoll server parameters"
+            self.result["error"] = 1
+            return self.result

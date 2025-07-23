@@ -1,15 +1,32 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 20, 2025
+# Reviewed: July 23, 2025
 from __future__ import annotations
 
 import re
 
 from loguru import logger
 from loguru import logger as filter_log
+from dataclasses import dataclass
 
 from config.logs import Logs
 from config.words_db import Words_DB
 from config.tlg import Telegram
+
+
+@dataclass
+class Result:
+    # Result = 0 - false
+    # Result = 1 - true
+    # Result = 2 - suspicious
+
+    result: int = 0
+    text: str = ""
+    case_description: str = ""
+
+    def reset_results(self):
+        self.result = 0
+        self.text = ""
+        self.case_description = ""
 
 
 class Filter:
@@ -50,6 +67,7 @@ class Filter:
         else:
             self.filter_log = filter_log
         self.is_member = True
+        self.result_test = Result()
         await self.reset_results()
         return self
 
@@ -58,13 +76,11 @@ class Filter:
         """
         Filter class method to reset filter results before every check.
         """
-        # Result = 0 - false
-        # Result = 1 - true
-        # Result = 2 - suspicious
         self.result = {"result": 0, "text": "", "case": ""}
+        self.result_test.reset_results()
         self.discovered_words = []
 
-    # Message filter. Returns true if message contains anything illegal
+    # Message filter. Returns dict with result and text
     @filter_log.catch
     async def filter_response(
         self,
@@ -114,6 +130,7 @@ class Filter:
                 return check_text_result
 
         self.result["result"] = 0
+        self.result_test.result = 0
         return self.result
 
     # Check of attachments for links and bad things in repost/reply
@@ -296,7 +313,7 @@ class Filter:
             # If we have more than X words - kill it
             max_points = Words_DB.blacklists.suspicious_points_limit
 
-            await self.regex_check(Words_DB.blacklists.suspisious_regex, text_to_check=text_to_check)
+            await self.regex_check_findall(Words_DB.blacklists.suspisious_regex, text_to_check=text_to_check)
             await self.word_check(Words_DB.blacklists.suspicious_list, text_to_check=text_to_check)
 
             result_len = 0
@@ -376,9 +393,12 @@ class Filter:
             await self.reset_results()
             self.filter_log.debug("# Checking for curses")
             text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
+            self.filter_log.debug(f"# Text after replacement: {text_to_check}")
 
-            await self.regex_check(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
+            await self.regex_check_findall(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
+            self.filter_log.debug(f"# Discovered words with regex: {self.discovered_words}")
             await self.word_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
+            self.filter_log.debug(f"# Discovered words with check: {self.discovered_words}")
 
             if self.discovered_words != []:
                 msg = f"Forbidden '{self.discovered_words}' from curses list was found."
@@ -492,10 +512,10 @@ class Filter:
         return False
 
     @filter_log.catch
-    async def regex_check(self, regex_list, text_to_check: str):
+    async def regex_check_match(self, regex_list, text_to_check: str):
         self.filter_log.debug("# Checking with regex list")
         for regex in regex_list:
-            match = re.match(f'\\b\\w*{regex}\\w*\\b', text_to_check.lower(), re.UNICODE)
+            match = re.match(f'\\b\\w*{regex}\\w*\\b', text_to_check, re.UNICODE)
             if match is not None:
                 self.filter_log.debug(f"# Regex matches: {match.group()}")
                 if not await self.check_for_whitelist(match.group()):
@@ -504,12 +524,24 @@ class Filter:
                     return
 
     @filter_log.catch
+    async def regex_check_findall(self, regex_list, text_to_check: str):
+        self.filter_log.debug("# Checking with regex list")
+        for regex in regex_list:
+            matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check, re.UNICODE)
+            if matches:
+                self.filter_log.debug(f"# Regex matches: {matches}")
+                for match in matches:
+                    if not await self.check_for_whitelist(match):
+                        self.discovered_words.append(match)
+                self.filter_log.debug(f"# Regex results: {self.discovered_words}")
+                return
+
+    @filter_log.catch
     async def word_check(self, blacklist, text_to_check):
         self.filter_log.debug("# Checking with words list")
         for item in blacklist:
-            pattern = r"(\b\S*%s\S*\b)" % item
             # Search all occurences in the text
-            matches = re.findall(pattern, text_to_check.lower(), re.UNICODE)
+            matches = re.findall(f'\\b\\w*{item}\\w*\\b', text_to_check, re.UNICODE)
             if matches:
                 self.filter_log.debug(f"# Words matches: {matches}")
                 # If there any - check whitelist for every cursed word we did found

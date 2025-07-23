@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 05, 2025
+# Reviewed: March 19, 2025
 from __future__ import annotations
 
 import argparse
@@ -93,19 +93,23 @@ async def main() -> None:
         send_msg_to_vk=args.send_msg_to_vk,
     )
 
-    while True:
-        # Listening
-        longpoll_result = await vk_longpoll.process_longpoll_response()
-        if longpoll_result:
-            if longpoll_result["error"] == 1:
-                main_log.info("# Bot has stopped")
-                # In case of error - break glass
-                break
-            if longpoll_result["response_type"] != "":
-                response_type = longpoll_result["response_type"]
-                # Response type, like 'message' or 'comment' will call according function from Processing
-                function_to_call = getattr(proc, response_type)
-                await function_to_call(response=longpoll_result["response"])
+    if vk_longpoll and proc:
+        while True:
+            # Listening
+            longpoll_result = await vk_longpoll.process_longpoll_response()
+            if longpoll_result:
+                if longpoll_result["error"] == 1:
+                    main_log.info("# Bot has stopped")
+                    # In case of error - break glass
+                    break
+                if longpoll_result["response_type"] != "":
+                    response_type = longpoll_result["response_type"]
+                    # Response type, like 'message' or 'comment' will call according function from Processing
+                    function_to_call = getattr(proc, response_type)
+                    await function_to_call(response=longpoll_result["response"])
+    else:
+        main_log.error("# Cannot start VK Longpoll or Processing. Shutting down.")
+        return None
 
 
 if __name__ == "__main__":
