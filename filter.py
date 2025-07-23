@@ -314,9 +314,8 @@ class Filter:
             max_points = Words_DB.blacklists.suspicious_points_limit
             text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
 
-            await self.regex_check_findall(Words_DB.blacklists.suspicious_regex, text_to_check=text_to_check)
-            if self.discovered_words == []:
-                await self.word_check(Words_DB.blacklists.suspicious_list, text_to_check=text_to_check)
+            await self.regex_check(Words_DB.blacklists.suspicious_regex, text_to_check=text_to_check)
+            await self.regex_check(Words_DB.blacklists.suspicious_list, text_to_check=text_to_check)
 
             result_len = 0
             if self.discovered_words != []:
@@ -397,9 +396,8 @@ class Filter:
             text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
             self.filter_log.debug(f"# Text after replacement: {text_to_check}")
 
-            await self.regex_check_findall(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
-            if self.discovered_words == []:
-                await self.word_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
+            await self.regex_check(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
+            await self.regex_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
 
             if self.discovered_words != []:
                 msg = f"Forbidden '{self.discovered_words}' from curses list was found."
@@ -513,42 +511,14 @@ class Filter:
         return False
 
     @filter_log.catch
-    async def regex_check_match(self, regex_list, text_to_check: str):
-        self.filter_log.debug("# Checking with regex list")
+    async def regex_check(self, regex_list, text_to_check: str):
+        self.filter_log.debug("# Checking with provided list")
         for regex in regex_list:
-            match = re.match(f'\\b\\w*{regex}\\w*\\b', text_to_check, re.UNICODE)
-            if match is not None:
-                self.filter_log.debug(f"# Regex matches: {match.group()}")
-                if not await self.check_for_whitelist(match.group()):
-                    self.discovered_words.append(match.group())
-                    self.filter_log.debug(f"# Regex results: {self.discovered_words}")
-                    return
-
-    @filter_log.catch
-    async def regex_check_findall(self, regex_list, text_to_check: str):
-        self.filter_log.debug("# Checking with regex list")
-        for regex in regex_list:
-            matches = re.findall(f'\\b\\w*{regex}\\w*\\b', text_to_check, re.UNICODE)
+            self.filter_log.debug(f"# Regex: {regex}")
+            matches = re.findall(f'\\w*{regex}\\w*', text_to_check, re.UNICODE)
             if matches:
                 self.filter_log.debug(f"# Regex matches: {matches}")
-                self.filter_log.debug(f"# Regex: {regex}")
                 for match in matches:
                     if not await self.check_for_whitelist(match):
                         self.discovered_words.append(match)
-                self.filter_log.debug(f"# Regex results: {self.discovered_words}")
-                return
-
-    @filter_log.catch
-    async def word_check(self, blacklist, text_to_check):
-        self.filter_log.debug("# Checking with words list")
-        for item in blacklist:
-            # Search all occurences in the text
-            matches = re.findall(f'\\w*{item}\\w*', text_to_check, re.UNICODE)
-            if matches:
-                self.filter_log.debug(f"# Words matches: {matches}")
-                # If there any - check whitelist for every cursed word we did found
-                self.filter_log.debug(f"# Word check results: {matches}")
-                for match in matches:
-                    if not await self.check_for_whitelist(match):
-                        self.discovered_words += matches
-                        self.filter_log.debug(f"# Words results: {self.discovered_words}")
+                        self.filter_log.debug(f"# Regex results: {self.discovered_words}")
