@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 03, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
-from config.vk import VK
+from config.vk import VK_config
 
 
 class Groups(VK_API):
@@ -37,13 +37,13 @@ class Groups(VK_API):
         """
 
         vk_method = "groups.isMember"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
         payload = {
             "user_id": user_id,
             "group_id": group_id,
-            "v": VK.vk_api.version,
+            "v": VK_config.API.version,
         }
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",
@@ -68,12 +68,12 @@ class Groups(VK_API):
         """
 
         vk_method = "groups.getLongPollServer"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
-        vk_group_id = VK.vk_api.group_id
-        vk_api_version = VK.vk_api.version
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
+        vk_group_id = VK_config.API.group_id
+        vk_api_version = VK_config.API.version
 
         payload = {"group_id": vk_group_id, "v": vk_api_version}
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",
@@ -83,9 +83,9 @@ class Groups(VK_API):
             use_ssl=self.use_ssl,
         )
         if isinstance(response, dict):
-            self.lp_server = response["response"]["server"]
-            self.lp_key = response["response"]["key"]
-            self.lp_ts = response["response"]["ts"]
+            self.server = response["response"]["server"]
+            self.key = response["response"]["key"]
+            self.ts = response["response"]["ts"]
             self.result["text"] = "Longpoll server parameters were received"
             return self.result
         else:

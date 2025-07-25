@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 19, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 import json
@@ -8,7 +8,7 @@ import requests
 from loguru import logger
 from loguru import logger as vk_api_log
 
-from config.vk import VK
+from config.vk import VK_config
 
 
 class VK_API:
@@ -37,14 +37,14 @@ class VK_API:
         if vk_api_log is None:
             if debug_enabled:
                 vk_api_log.add(
-                    VK.log_path,
+                    VK_config.log_path,
                     level="DEBUG",
                     format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
                 )
                 vk_api_log.debug("# VK API class will run in Debug mode.")
             else:
                 vk_api_log.add(
-                    VK.log_path,
+                    VK_config.log_path,
                     level="INFO",
                     format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
                 )

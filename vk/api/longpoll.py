@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 05, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
-
-import asyncio
 
 from vk.api.groups import Groups
 from vk.api import vk_api_log, VK_API
-from config.vk import VK
+from config.vk import VK_config
 
 
 class Longpoll(Groups, VK_API):
@@ -21,20 +19,25 @@ class Longpoll(Groups, VK_API):
 
         self = cls()
         # Longpoll params init
-        self.lp_key = ""
-        self.lp_ts = 0
-        self.lp_server = ""
+        self.key = ""
+        self.ts = 0
+        self.server = ""
         self.use_ssl = use_ssl
+        # result variables
+        self.result = {
+            "text": "",
+            "type": "",
+        }
         # self.vk_groups = Groups()
         # Get Longpoll server parameters
         vk_api_log.debug("# Get LongPoll server parameters to listen")
-        get_lp_server_result = await self.get_long_poll_server()
-        if get_lp_server_result:
-            if get_lp_server_result["error"] != 1:
-                vk_api_log.debug(f"# {get_lp_server_result['text']}")
+        get_server_result = await self.get_long_poll_server()
+        if get_server_result:
+            if get_server_result["error"] != 1:
+                vk_api_log.debug(f"# {get_server_result['text']}")
             else:
                 vk_api_log.error(
-                    f"# Get Longpoll server parameters error. {get_lp_server_result['text']}",
+                    f"# Get Longpoll server parameters error. {get_server_result['text']}",
                 )
             return self
         return None
@@ -52,14 +55,14 @@ class Longpoll(Groups, VK_API):
         # Form request params
         payload = {
             "act": "a_check",
-            "key": self.lp_key,
-            "ts": self.lp_ts,
-            "wait": VK.vk_longpoll.wait,
+            "key": self.key,
+            "ts": self.ts,
+            "wait": VK_config.Longpoll.wait,
         }
 
         response = await self.do_request(
             "GET",
-            self.lp_server,
+            self.server,
             params=payload,
             use_ssl=self.use_ssl,
         )
@@ -75,83 +78,55 @@ class Longpoll(Groups, VK_API):
         :rtype: ``dict``
         """
 
-        # # Errors counter for warnings.
-        # +1 if warning was received (e.g. API key deprecated)
-        # reset if next request is OK
-        errors_limit = VK.errors_limit
-        wait_period = VK.wait_period
-        vk_api_log.debug("# Start to listen LongPoll API. Errors counter was resetted")
-        lp_res = {
-            "errors_counter": 0,
-            "response": "",
-            "response_type": "",
-            "error": 0,
-        }
+        vk_api_log.debug("# Starting to listen LongPoll API.")
         response = await self.listen_longpoll()
-        # If there is error in VK Longpoll response - process it
+
+        # If there are errors in VK Longpoll response - process it
+        # Else - process response
         vk_api_log.debug(f"# Longpoll API response: {response}")
-        if "Error" in response:
-            lp_res["errors_counter"] += 1
-            vk_api_log.info(f"Errors counter: {lp_res['errors_counter']}")
-            vk_api_log.warning(f"# {response}")
-            if lp_res["errors_counter"] == errors_limit:
-                msg = "# Errors limit is over. Shut down."
-                vk_api_log.error(msg)
-                lp_res["response"] = msg
-                lp_res["error"] = 1
-                return lp_res
-            await asyncio.sleep(wait_period)
-            return lp_res
-        if "failed" in response:
-            process_result = await self.process_longpoll_errors(response)
-            # Result contains tuple: True/False, error message to log
-            if process_result["error"] == 0:
-                # In case of warning we count to ERRORS_LIMIT and then stop
-                lp_res["errors_counter"] += 1
-                vk_api_log.debug(f"# {process_result['text']}")
-                vk_api_log.debug(f"# Errors counter: {lp_res['errors_counter']}")
-                if lp_res["errors_counter"] == errors_limit:
-                    msg = "# Errors limit is over. Shut down."
-                    vk_api_log.error(msg)
-                    lp_res["response"] = msg
-                    lp_res["error"] = 1
-                    return lp_res
-                await asyncio.sleep(wait_period)
-                return lp_res
-            else:
-                msg = f"# Critical error. {process_result['text']}"
-                vk_api_log.error(msg)
-                lp_res["response"] = msg
-                lp_res["error"] = 1
-                return lp_res
+        if not response:
+            vk_api_log.error("# Longpoll response is empty!")
+            return 1
         else:
-            vk_api_log.debug(
-                "# No failures in response. Errors counter was resetted",
-            )
-            lp_res["errors_counter"] = 0
-            if response["updates"] == []:
-                vk_api_log.debug("# Listening interval passed, nothing new. Proceeding...")
-                return lp_res
-            # Process response with message
-            self.lp_ts = response["ts"]
+            if "Error" in response:
+                vk_api_log.error(f"# Error during LP request: {response}")
+                return 1
+            if "failed" in response:
+                process_result = await self.process_longpoll_errors(response)
+                if process_result["error"] == 0:
+                    vk_api_log.error(f"# {process_result['text']}")
+                    return 1
+                else:
+                    msg = f"# Critical error. {process_result['text']}"
+                    vk_api_log.error(msg)
+                    return 1
+            else:
+                vk_api_log.debug(
+                    "# No failures in response.",
+                )
+                if response["updates"] == []:
+                    vk_api_log.debug("# Listening interval passed, nothing new.")
+                    return 0
+                # Process response with message
+                self.ts = response["ts"]
 
-            # If this is new/edited comment
-            if (
-                response["updates"][0]["type"] == "wall_reply_new"
-                or response["updates"][0]["type"] == "wall_reply_edit"
-                or response["updates"][0]["type"] == "photo_comment_new"
-                or response["updates"][0]["type"] == "photo_comment_edit"
-            ):
-                lp_res["response"] = response
-                lp_res["response_type"] = "comment"
-                return lp_res
+                # If this is new/edited comment
+                if (
+                    response["updates"][0]["type"] == "wall_reply_new"
+                    or response["updates"][0]["type"] == "wall_reply_edit"
+                    or response["updates"][0]["type"] == "photo_comment_new"
+                    or response["updates"][0]["type"] == "photo_comment_edit"
+                ):
+                    self.result['text'] = response
+                    self.result['type'] = "comment"
+                    return self.result
 
-            # If this is new message
-            if response["updates"][0]["type"] == "message_new":
-                lp_res["response"] = response
-                lp_res["response_type"] = "message"
-                return lp_res
-            return lp_res
+                # If this is new message
+                if response["updates"][0]["type"] == "message_new":
+                    self.result['text'] = response
+                    self.result['type'] = "message"
+                    return self.result
+                return self.result
 
     @vk_api_log.catch
     async def process_longpoll_errors(self, result: dict) -> dict:
@@ -171,7 +146,7 @@ class Longpoll(Groups, VK_API):
                 f"[VK WARNING] Event history is deprecated or lost. New TS provided: {result['ts']}."
             )
             self.result["error"] = 0
-            self.lp_ts = result["ts"]
+            self.ts = result["ts"]
         if result["failed"] == 2:
             self.result["text"] = (
                 "[VK WARNING] API Key is deprecated. Need to get new with 'groups.getLongPollServer'."

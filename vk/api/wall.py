@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 03, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
-from config.vk import VK
+from config.vk import VK_config
 
 
 class Wall(VK_API):
@@ -36,13 +36,13 @@ class Wall(VK_API):
         :rtype: ``dict``
         """
         vk_method = "wall.deleteComment"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
         payload = {
             "owner_id": owner_id,
             "comment_id": comment_id,
-            "v": VK.vk_api.version,
+            "v": VK_config.API.version,
         }
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",

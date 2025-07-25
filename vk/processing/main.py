@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 20, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 from time import sleep
@@ -8,7 +8,7 @@ from typing import Optional, Dict
 from loguru import logger
 from loguru import logger as vk_proc_log
 
-from config.vk import VK
+from config.vk import VK_config
 from config.logs import Logs
 from filter import Filter
 from vk.api.groups import Groups
@@ -163,13 +163,13 @@ class VK_processing:
         #    through VK API search messages get possibly redacted message and check it once again.
         # Additional condition is for Message type of the update
         if filter_result["result"] in [0, 2] and not false_positive and cm_id is not None:
-            vk_proc_log.debug(f"# This was clear message, we'll wait for {VK.check_delay} seconds and check it once more.")
-            sleep(VK.check_delay)
+            vk_proc_log.debug(f"# This was clear message, we'll wait for {VK_config.check_delay} seconds and check it once more.")
+            sleep(VK_config.check_delay)
             vk_proc_log.debug(f"Group ID: {group_id}, Peer ID: {peer_id}")
             last_reply = await self.vk_messages.search(
                 group_id,
                 peer_id,
-                VK.messages_search_count,
+                VK_config.messages_search_count,
             )
             last_reply = last_reply["text"]
             vk_proc_log.debug(f"# Last reply: {last_reply}")
@@ -230,7 +230,7 @@ class VK_processing:
             if self.send_msg_to_vk:
                 if send_result["error"] == 0:
                     vk_proc_log.info(
-                        f"# Service message was sent to {VK.chats[str(peer_id)]}",
+                        f"# Service message was sent to {VK_config.chats[str(peer_id)]}",
                     )
 
         # If filter returns 2 - we should get warning to Telegram
@@ -267,7 +267,7 @@ class VK_processing:
         is_member = True
         is_memberRes = await self.vk_groups.is_member(
             user_id=user_id,
-            group_id=VK.vk_api.group_id,
+            group_id=VK_config.API.group_id,
         )
         if is_memberRes:
             if is_memberRes["text"] == "0":
@@ -289,7 +289,7 @@ class VK_processing:
                         vk_proc_log.error(f"# Can't get username from ID: {kicked_username['text']}")
                     else:
                         kicked_username = kicked_username["text"]
-                        msg = f"# {username} kicked {kicked_username} from {VK.chats[str(peer_id)]}"
+                        msg = f"# {username} kicked {kicked_username} from {VK_config.chats[str(peer_id)]}"
                         vk_proc_log.info(msg)
 
         # If all is OK - start checking message

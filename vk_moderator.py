@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 19, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 import argparse
@@ -8,7 +8,7 @@ import asyncio
 from loguru import logger
 from notifiers.logging import NotificationHandler
 
-from config.vk import VK
+from config.vk import VK_config
 from config.tlg import Telegram
 from vk.api.longpoll import Longpoll
 from vk.processing import VK_processing
@@ -55,14 +55,14 @@ async def main() -> None:
     logger.remove()
 
     # Logging params
-    main_log_file = VK.log_path
+    main_log_file = VK_config.log_path
     if args.debug_enabled:
         logger.add(
             main_log_file,
             level="DEBUG",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
-            retention = 2,
+            retention=2,
         )
         logger.debug("# VK moderator will run in Debug mode.")
     else:
@@ -71,7 +71,7 @@ async def main() -> None:
             level="INFO",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
-            retention = 2,
+            retention=2,
         )
     main_log = logger.bind(name="main_log")
 
@@ -94,19 +94,24 @@ async def main() -> None:
     )
 
     if vk_longpoll and proc:
+        errors_limit = VK_config.Longpoll.errors_limit
+        errors = 0
         while True:
             # Listening
             longpoll_result = await vk_longpoll.process_longpoll_response()
             if longpoll_result:
-                if longpoll_result["error"] == 1:
-                    main_log.info("# Bot has stopped")
-                    # In case of error - break glass
-                    break
-                if longpoll_result["response_type"] != "":
-                    response_type = longpoll_result["response_type"]
-                    # Response type, like 'message' or 'comment' will call according function from Processing
+                if longpoll_result["type"] != "":
+                    response_type = longpoll_result["type"]
+                    # Response type, like 'message' or 'comment' will call
+                    # according function from Processing
                     function_to_call = getattr(proc, response_type)
-                    await function_to_call(response=longpoll_result["response"])
+                    await function_to_call(response=longpoll_result["text"])
+            elif longpoll_result == 1:
+                errors += 1
+                await asyncio.sleep(VK_config.Longpoll.wait_period)
+                if errors >= errors_limit:
+                    main_log.error("# Errors limit is over. Shutting down.")
+                    return None
     else:
         main_log.error("# Cannot start VK Longpoll or Processing. Shutting down.")
         return None

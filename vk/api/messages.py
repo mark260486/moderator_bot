@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 27, 2024
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 import random
 from datetime import datetime, timedelta
 
 from vk.api import VK_API, vk_api_log
-from config.vk import VK
+from config.vk import VK_config
 
 
 class Messages(VK_API):
@@ -43,15 +43,15 @@ class Messages(VK_API):
         """
 
         vk_method = "messages.send"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
         payload = {
             "group_id": group_id,
             "peer_id": peer_id,
             "message": text,
             "random_id": random.randint(100, 100000),
-            "v": VK.vk_api.version,
+            "v": VK_config.API.version,
         }
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",
@@ -89,15 +89,15 @@ class Messages(VK_API):
         )
 
         vk_method = "messages.search"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
         payload = {
             "group_id": group_id,
             "peer_id": peer_id,
             "count": count,
             "date": tomorrow,
-            "v": VK.vk_api.version,
+            "v": VK_config.API.version,
         }
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",
@@ -128,15 +128,15 @@ class Messages(VK_API):
         """
 
         vk_method = "messages.delete"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
         payload = {
             "group_id": group_id,
             "cmids": cm_id,
             "peer_id": peer_id,
-            "delete_for_all": VK.vk_api.delete_for_all,
-            "v": VK.vk_api.version,
+            "delete_for_all": VK_config.API.delete_for_all,
+            "v": VK_config.API.version,
         }
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",
@@ -167,14 +167,14 @@ class Messages(VK_API):
         """
 
         vk_method = "messages.removeChatUser"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
         payload = {
             "group_id": group_id,
             "user_id": user_id,
             "member_id": member_id,
-            "v": VK.vk_api.version,
+            "v": VK_config.API.version,
         }
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",

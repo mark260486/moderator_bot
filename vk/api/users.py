@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 03, 2025
+# Reviewed: July 25, 2025
 from __future__ import annotations
 
 from vk.api import VK_API, vk_api_log
-from config.vk import VK
+from config.vk import VK_config
 
 
 class Users(VK_API):
@@ -34,9 +34,9 @@ class Users(VK_API):
         """
 
         vk_method = "users.get"
-        vk_api_url = f"{VK.vk_api.api_url}{vk_method}"
-        payload = {"user_ids": user_id, "v": VK.vk_api.version}
-        headers = {"Authorization": f"Bearer {VK.vk_api.api_key}"}
+        vk_api_url = f"{VK_config.API.api_url}{vk_method}"
+        payload = {"user_ids": user_id, "v": VK_config.API.version}
+        headers = {"Authorization": f"Bearer {VK_config.API.api_key}"}
 
         response = await self.do_request(
             "GET",
@@ -46,7 +46,7 @@ class Users(VK_API):
             use_ssl=self.use_ssl,
         )
         if response["response"] == []:
-            self.result["text"] = VK.public_name
+            self.result["text"] = VK_config.public_name
             return self.result
         if "error" in response["response"][0].keys():
             msg = (
