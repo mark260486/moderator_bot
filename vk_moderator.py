@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 25, 2025
+# Reviewed: July 26, 2025
 from __future__ import annotations
 
 import argparse
@@ -106,7 +106,7 @@ async def main() -> None:
                     # according function from Processing
                     function_to_call = getattr(proc, response_type)
                     await function_to_call(response=longpoll_result["text"])
-            elif longpoll_result == 1:
+            elif longpoll_result == "error":
                 errors += 1
                 await asyncio.sleep(VK_config.Longpoll.wait_period)
                 if errors >= errors_limit:

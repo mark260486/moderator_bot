@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 25, 2025
+# Reviewed: July 26, 2025
 from __future__ import annotations
 
 from vk.api.groups import Groups
@@ -86,27 +86,26 @@ class Longpoll(Groups, VK_API):
         vk_api_log.debug(f"# Longpoll API response: {response}")
         if not response:
             vk_api_log.error("# Longpoll response is empty!")
-            return 1
+            return "error"
         else:
             if "Error" in response:
                 vk_api_log.error(f"# Error during LP request: {response}")
-                return 1
+                return "error"
             if "failed" in response:
                 process_result = await self.process_longpoll_errors(response)
                 if process_result["error"] == 0:
                     vk_api_log.error(f"# {process_result['text']}")
-                    return 1
+                    return "error"
                 else:
-                    msg = f"# Critical error. {process_result['text']}"
-                    vk_api_log.error(msg)
-                    return 1
+                    vk_api_log.error(f"# Critical error. {process_result['text']}")
+                    return "error"
             else:
                 vk_api_log.debug(
                     "# No failures in response.",
                 )
                 if response["updates"] == []:
                     vk_api_log.debug("# Listening interval passed, nothing new.")
-                    return 0
+                    return ""
                 # Process response with message
                 self.ts = response["ts"]
 
