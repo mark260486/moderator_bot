@@ -27,6 +27,7 @@ class Longpoll(Groups, VK_API):
         self.result = {
             "text": "",
             "type": "",
+            "error": 0,
         }
         # self.vk_groups = Groups()
         # Get Longpoll server parameters
@@ -42,7 +43,7 @@ class Longpoll(Groups, VK_API):
             return self
         return None
 
-    # GET request to VK LongPoll API to listen for messages
+    # GET request to VK LongPoll API to listen for errors
     @vk_api_log.catch
     async def listen_longpoll(self) -> dict:
         """
@@ -86,30 +87,31 @@ class Longpoll(Groups, VK_API):
         vk_api_log.debug(f"# Longpoll API response: {response}")
         if not response:
             vk_api_log.error("# Longpoll response is empty!")
-            return "error"
+            self.result['type'] = "error"
+            return self.result
         else:
             if "Error" in response:
                 vk_api_log.error(f"# Error during LP request: {response}")
-                return "error"
+                self.result['type'] = "error"
+                return self.result
             if "failed" in response:
                 process_result = await self.process_longpoll_errors(response)
                 if process_result["error"] == 0:
                     vk_api_log.error(f"# {process_result['text']}")
-                    return "error"
+                    self.result['type'] = "error"
+                    return self.result
                 else:
                     vk_api_log.error(f"# Critical error. {process_result['text']}")
-                    return "error"
+                    self.result['type'] = "error"
+                    return self.result
             else:
-                vk_api_log.debug(
-                    "# No failures in response.",
-                )
+                vk_api_log.debug("# No failures in response.")
                 if response["updates"] == []:
                     vk_api_log.debug("# Listening interval passed, nothing new.")
-                    return ""
-                # Process response with message
+                    self.result['type'] = "pass"
+                    return self.result
                 self.ts = response["ts"]
 
-                # If this is new/edited comment
                 if (
                     response["updates"][0]["type"] == "wall_reply_new"
                     or response["updates"][0]["type"] == "wall_reply_edit"
@@ -120,10 +122,10 @@ class Longpoll(Groups, VK_API):
                     self.result['type'] = "comment"
                     return self.result
 
-                # If this is new message
-                if response["updates"][0]["type"] == "message_new":
+                # If this is new error
+                if response["updates"][0]["type"] == "error_new":
                     self.result['text'] = response
-                    self.result['type'] = "message"
+                    self.result['type'] = "error"
                     return self.result
                 return self.result
 
@@ -167,5 +169,5 @@ class Longpoll(Groups, VK_API):
             self.result["text"] = (
                 "[GENERAL ERROR] Something went wrong during VK request managing."
             )
-            self.result["error"] = 1
+            self.result['type'] = "error"
         return self.result

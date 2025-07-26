@@ -103,15 +103,18 @@ async def main() -> None:
                 if longpoll_result["type"] != "":
                     response_type = longpoll_result["type"]
                     # Response type, like 'message' or 'comment' will call
-                    # according function from Processing
-                    function_to_call = getattr(proc, response_type)
-                    await function_to_call(response=longpoll_result["text"])
-            elif longpoll_result == "error":
-                errors += 1
-                await asyncio.sleep(VK_config.Longpoll.wait_period)
-                if errors >= errors_limit:
-                    main_log.error("# Errors limit is over. Shutting down.")
-                    return None
+                    # according function from Processing. Error will be processed.
+                    if not response_type == "error" and not response_type == "pass":
+                        function_to_call = getattr(proc, response_type)
+                        await function_to_call(response=longpoll_result["text"])
+                    elif response_type == "error":
+                        errors += 1
+                        await asyncio.sleep(VK_config.Longpoll.wait_period)
+                        if errors >= errors_limit:
+                            main_log.error("# Errors limit is over. Shutting down.")
+                            return None
+                    elif response_type == "pass":
+                        pass
     else:
         main_log.error("# Cannot start VK Longpoll or Processing. Shutting down.")
         return None
