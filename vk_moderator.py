@@ -79,7 +79,7 @@ async def main() -> None:
     if args.send_msg_to_tlg:
         tg_params = {
             "token": Telegram.tlg_api.api_key,
-            "chat_id": Telegram.tlg_api.log_chat_id,
+            "chat_id": Telegram.tlg_api.vk_log_chat_id,
         }
         tg_handler = NotificationHandler("telegram", defaults=tg_params)
         main_log.add(tg_handler, format="{message}", level="INFO")
@@ -100,6 +100,8 @@ async def main() -> None:
             # Listening
             longpoll_result = await vk_longpoll.process_longpoll_response()
             if longpoll_result:
+                main_log.debug(f"# Longpoll response: {longpoll_result}")
+                main_log.debug(f"# Response type: {longpoll_result['type']}")
                 if longpoll_result["type"] != "":
                     response_type = longpoll_result["type"]
                     # Response type, like 'message' or 'comment' will call

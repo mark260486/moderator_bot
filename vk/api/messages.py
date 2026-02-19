@@ -60,7 +60,7 @@ class Messages(VK_API):
             params=payload,
             use_ssl=self.use_ssl,
         )
-        return self.process_response(response, "Message was sen")
+        return self.process_response(response, "Message was sent")
 
     @vk_api_log.catch
     async def search(self, group_id: int, peer_id: int, count: int) -> dict:

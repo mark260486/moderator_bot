@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: March 04, 2025
+# Reviewed: February 26, 2025
 from __future__ import annotations
 
 
@@ -44,13 +44,6 @@ class Telegram:
         temp_message: str = f"Привет, member_name!\nПожалуйста, подтверди, что ты человек, в течение {Timeout} секунд."
         temp_button: str = "Да, я человек"
         Timeout_message: str = f"Увы, member_name, {Timeout} секунд прошло, ты не успел :("
-
-    class Channel_forward:
-        """Parameters for Telegram chats with topics."""
-        enabled: bool = False
-        forum_id: int = -1001436890713  # This is your Chat ID
-        thread_id: int = 64392  # This is your Topic ID
-        channel_id: int = -1001304165573  # This is your channel ID
 
     log_path = "/var/log/moderator_bot/tlg_moderator.log"
     service_name: str = "tlg_moderator"

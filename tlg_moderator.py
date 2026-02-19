@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: May 05, 2025
+# Reviewed: December 14, 2025
 from __future__ import annotations
 
 import argparse
@@ -20,10 +20,15 @@ from aiogram.methods import SendMessage, GetChatAdministrators
 from aiogram.types import LinkPreviewOptions, chat_permissions
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import timedelta
+from fuzzywuzzy import fuzz
 
 from config.tlg import Telegram
+from config.faq import faq
 from tlg.processing import TLG_processing
 from tlg.db import DB
+from filter import Result
+
+COINCIDENCE_THRESHOLD = 90
 
 
 class captchaDialog(StatesGroup):
@@ -50,7 +55,7 @@ class ModeratorBot:
     async def greet_new_user(self, event: types.ChatMemberUpdated, state: FSMContext):
         logger.debug("# Greet chat member ========================================"[:70])
         logger.debug(f"# Event: {event}")
-        logger.info(f"# Joining username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
+        logger.debug(f"# Joining username: {event.new_chat_member.user.first_name}, user ID: {event.new_chat_member.user.id}")
         if Telegram.Captcha.Enabled:
             await self.handle_captcha(event, state)
         else:
@@ -106,7 +111,7 @@ class ModeratorBot:
     async def announce_user_leave(self, event: types.ChatMemberUpdated):
         logger.debug("# Chat member leave ========================================"[:70])
         logger.debug(f"# Event: {event}")
-        logger.info(f"# Leaving username: {event.old_chat_member.user.first_name}, user ID: {event.old_chat_member.user.id}")
+        logger.debug(f"# Leaving username: {event.old_chat_member.user.first_name}, user ID: {event.old_chat_member.user.id}")
         if self.is_supergroup(event):
             try:
                 await self.bot(SendMessage(
@@ -167,6 +172,13 @@ class ModeratorBot:
             logger.debug(f"# This is empty message about new user join. Message ID: {event.message_id}")
             self.message_id = event.message_id
         await self.tlg_proc.moderate_event(event)
+        faq_answer = await self.check_faq(event.text)
+        if faq_answer:
+            await self.bot(SendMessage(
+                chat_id = event.chat.id,
+                text = faq_answer,
+                reply_to_message_id = event.message_id,
+            ))
 
     async def get_chat_administrators(self, chat_id: int) -> list:
         logger.debug("# Get chat administrators ========================================"[:70])
@@ -181,6 +193,17 @@ class ModeratorBot:
         if event.chat.type == "supergroup":
             return True
         return False
+
+    async def check_faq(self, message: str) -> str | None:
+        logger.debug("# Check FAQ ========================================"[:70])
+        for question, answer_id in faq.questions.items():
+            ratio = fuzz.ratio(message.lower(), question.lower())
+            # logger.debug(f"# Checking question: '{question}' | Coincidence ratio: {ratio}")
+            if ratio >= COINCIDENCE_THRESHOLD:
+                logger.debug(f"# Found matching question: '{question}' with answer ID: {answer_id}")
+                return faq.answers.get(answer_id)
+        logger.debug("# No matching FAQ found")
+        return None
 
 
 async def main() -> None:
@@ -197,7 +220,7 @@ async def main() -> None:
     parser.add_argument(
         "-t", "--tlg", dest="send_msg_to_tlg",
         action="store_true",
-        help="Send Notification message to moderator Telegram Chat",
+        help="Send Notification messages to moderator Telegram Chat",
         default=False,
         required=False,
     )

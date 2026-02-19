@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 26, 2025
+# Reviewed: August 01, 2025
 from __future__ import annotations
 
 from vk.api.groups import Groups
@@ -24,7 +24,7 @@ class Longpoll(Groups, VK_API):
         self.server = ""
         self.use_ssl = use_ssl
         # result variables
-        self.result = {
+        self.lp_result = {
             "text": "",
             "type": "",
             "error": 0,
@@ -83,51 +83,57 @@ class Longpoll(Groups, VK_API):
         response = await self.listen_longpoll()
 
         # If there are errors in VK Longpoll response - process it
-        # Else - process response
+        # Else - return response
         vk_api_log.debug(f"# Longpoll API response: {response}")
         if not response:
             vk_api_log.error("# Longpoll response is empty!")
-            self.result['type'] = "error"
-            return self.result
+            self.lp_result['type'] = "error"
+            return self.lp_result
         else:
             if "Error" in response:
                 vk_api_log.error(f"# Error during LP request: {response}")
-                self.result['type'] = "error"
-                return self.result
+                self.lp_result['type'] = "error"
+                return self.lp_result
             if "failed" in response:
                 process_result = await self.process_longpoll_errors(response)
                 if process_result["error"] == 0:
-                    vk_api_log.error(f"# {process_result['text']}")
-                    self.result['type'] = "error"
-                    return self.result
+                    vk_api_log.debug(f"# {process_result['text']}")
+                    self.lp_result['type'] = "pass"
+                    return self.lp_result
                 else:
                     vk_api_log.error(f"# Critical error. {process_result['text']}")
-                    self.result['type'] = "error"
-                    return self.result
-            else:
-                vk_api_log.debug("# No failures in response.")
-                if response["updates"] == []:
-                    vk_api_log.debug("# Listening interval passed, nothing new.")
-                    self.result['type'] = "pass"
-                    return self.result
-                self.ts = response["ts"]
+                    self.lp_result['type'] = "error"
+                    return self.lp_result
 
-                if (
-                    response["updates"][0]["type"] == "wall_reply_new"
-                    or response["updates"][0]["type"] == "wall_reply_edit"
-                    or response["updates"][0]["type"] == "photo_comment_new"
-                    or response["updates"][0]["type"] == "photo_comment_edit"
-                ):
-                    self.result['text'] = response
-                    self.result['type'] = "comment"
-                    return self.result
+            vk_api_log.debug("# No failures in response.")
+            if response["updates"] == []:
+                vk_api_log.debug("# Listening interval passed, nothing new.")
+                self.lp_result['type'] = "pass"
+                return self.lp_result
+            self.ts = response["ts"]
 
-                # If this is new error
-                if response["updates"][0]["type"] == "error_new":
-                    self.result['text'] = response
-                    self.result['type'] = "error"
-                    return self.result
-                return self.result
+            if (
+                response["updates"][0]["type"] == "wall_reply_new"
+                or response["updates"][0]["type"] == "wall_reply_edit"
+                or response["updates"][0]["type"] == "photo_comment_new"
+                or response["updates"][0]["type"] == "photo_comment_edit"
+            ):
+                self.lp_result['text'] = response
+                self.lp_result['type'] = "comment"
+                return self.lp_result
+
+            if (
+                response["updates"][0]["type"] == "message_new"
+            ):
+                self.lp_result['text'] = response
+                self.lp_result['type'] = "message"
+                return self.lp_result
+
+            # If this is new error
+            if response["updates"][0]["type"] == "error_new":
+                self.lp_result['text'] = response
+                self.lp_result['type'] = "error"
+            return self.lp_result
 
     @vk_api_log.catch
     async def process_longpoll_errors(self, result: dict) -> dict:
@@ -143,31 +149,31 @@ class Longpoll(Groups, VK_API):
 
         vk_api_log.debug(f"# Processing Longpoll error: {result}")
         if result["failed"] == 1:
-            self.result["text"] = (
+            self.lp_result["text"] = (
                 f"[VK WARNING] Event history is deprecated or lost. New TS provided: {result['ts']}."
             )
-            self.result["error"] = 0
+            self.lp_result["error"] = 0
             self.ts = result["ts"]
         if result["failed"] == 2:
-            self.result["text"] = (
+            self.lp_result["text"] = (
                 "[VK WARNING] API Key is deprecated. Need to get new with 'groups.getLongPollServer'."
             )
-            self.result["error"] = 0
+            self.lp_result["error"] = 0
             await self.get_long_poll_server()
         if result["failed"] == 3:
-            self.result["text"] = (
+            self.lp_result["text"] = (
                 "[VK WARNING] Information is lost. Need to get new API Key and TS with 'groups.getLongPollServer'."
             )
-            self.result["error"] = 0
+            self.lp_result["error"] = 0
+            await self.get_long_poll_server()
         if result["failed"] == 4:
-            self.result["text"] = (
+            self.lp_result["text"] = (
                 "[VK WARNING] Incorrect version of VK API was passed."
             )
-            self.result["error"] = 0
-            await self.get_long_poll_server()
-        if self.result["text"] == "":
-            self.result["text"] = (
+            self.lp_result["error"] = 0
+        if self.lp_result["text"] == "":
+            self.lp_result["text"] = (
                 "[GENERAL ERROR] Something went wrong during VK request managing."
             )
-            self.result['type'] = "error"
-        return self.result
+            self.lp_result['type'] = "error"
+        return self.lp_result

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 23, 2025
+# Reviewed: December 03, 2025
 from __future__ import annotations
 
 import re
@@ -22,10 +22,12 @@ class Result:
     result: int = 0
     text: str = ""
     case_description: str = ""
+    case_findings: str = ""
 
     def reset_results(self):
         self.result = 0
         self.text = ""
+        self.case_findings = ""
         self.case_description = ""
 
 
@@ -76,7 +78,7 @@ class Filter:
         """
         Filter class method to reset filter results before every check.
         """
-        self.result = {"result": 0, "text": "", "case": ""}
+        self.result = {"result": 0, "text": "", "case": "", "findings": ""}
         self.result_test.reset_results()
         self.discovered_words = []
 
@@ -160,13 +162,14 @@ class Filter:
                     if item in attachment["link"]["url"].lower().replace(
                         " ", ""
                     ):
-                        msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found in attachment!"
+                        msg = f"Запрещёнка из спам-листа была найдена во вложении: '{item.replace('.', '[.]')}'!"
                         self.filter_log.debug(f"# {msg}")
                         self.result["result"] = 1
                         self.result["text"] = msg
                         self.result["case"] = (
                             "подозрительная ссылка, спам, реклама."
                         )
+                        self.result["findings"] = item.replace('.', '[.]')
                         return self.result
             # Repost content and Repost comment content
             if (
@@ -213,7 +216,7 @@ class Filter:
         ) and await self.check_for_english(
             username,
         ):
-            msg = f"{username} with {text_to_check} was caught."
+            msg = f"{username} попался с текстом: {text_to_check}."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = (
@@ -222,21 +225,21 @@ class Filter:
 
         # Check for phone numbers
         if await self.check_for_phone(text_to_check):
-            msg = f"{username} with {text_to_check} was caught."
+            msg = f"{username} попался с текстом: {text_to_check}."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "номер телефона в тексте, вероятно, бот."
 
         # Check for bank card numbers
         if await self.check_for_card(text_to_check):
-            msg = f"{username} with {text_to_check} was caught."
+            msg = f"{username} попался с текстом: {text_to_check}."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "номер банковской карточки в тексте, вероятно, бот."
 
         # Check if message contains mishmash
         if await self.check_for_english(text_to_check):
-            msg = f"{username} with {text_to_check} was caught."
+            msg = f"{username} попался с текстом: {text_to_check}."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "сообщение на латинице, вероятно, бот."
@@ -248,20 +251,28 @@ class Filter:
         elif self.result["result"] == 2:
             return self.result
 
+        # Kreosan list check
+        kreosan_list_check = await self.check_for_kreosan(text_to_check)
+        if kreosan_list_check["result"] >= 1:
+            return kreosan_list_check
+        elif self.result["result"] == 2:
+            return self.result
+
         # Suspicious words check
         # If we have more than X words - kill it
-        suspicious_check_result = await self.check_for_suspicious_words(
-            text_to_check
-        )
-        if suspicious_check_result["result"] > 0:
-            return suspicious_check_result
+        # TEMPORARY DISABLED
+        # suspicious_check_result = await self.check_for_suspicious_words(
+        #     text_to_check
+        # )
+        # if suspicious_check_result["result"] > 0:
+        #     return suspicious_check_result
 
         # Check for scam messages consisting of Telegram prem emoji
         non_text_check_result = await self.check_for_non_text(
             text_to_check = text_to_check
         )
         if non_text_check_result:
-            msg = f"{username} with {text_to_check} was caught."
+            msg = f"{username} попался с текстом: {text_to_check}."
             self.result["result"] = 2
             self.result["text"] = msg
             self.result["case"] = "сообщение, состоящее из эмодзи. Вероятно, бот."
@@ -324,20 +335,21 @@ class Filter:
                     result_len += 1
 
                 if result_len >= max_points:
-                    msg = f"Suspicious '{self.discovered_words}' was found.\nMore than {max_points} suspicious words were found."
+                    msg = f"Нашёл подозрительное: '{self.discovered_words}'.\nБыло найдено более {max_points} подозрительных слов."
                     self.filter_log.debug(f"# {msg}")
                     self.result["result"] = 1
                     self.result["text"] = msg
                     self.result["case"] = (
                         "подозрительный набор слов, спам, реклама."
                     )
+                    self.result["findings"] = self.discovered_words
                     return self.result
 
                 if result_len > 0 and result_len < max_points:
                     if self.discovered_words != []:
-                        msg = f"Limit of {max_points} is not exceeded."
+                        msg = f"Лимит в {max_points} не превышен."
                     else:
-                        msg = f"Suspicious '{self.discovered_words}' was found. Limit of {max_points} is not exceeded."
+                        msg = f"Нашёл подозрительное: '{self.discovered_words}'. Лимит в {max_points} не превышен."
                     self.filter_log.debug(f"# {msg}")
                     self.result["result"] = 2
                     self.result["text"] = msg
@@ -367,15 +379,49 @@ class Filter:
         if text_to_check:
             for item in Words_DB.blacklists.spam_list:
                 if item in text_to_check.lower().replace(" ", ""):
-                    msg = f"Forbidden '{item.replace('.', '[.]')}' from spam list was found."
+                    msg = f"Была найдена запрещёнка из спам-листа: '{item.replace('.', '[.]')}'."
                     self.filter_log.debug(f"# {msg}")
                     self.result["result"] = 1
                     self.result["text"] = msg
                     self.result["case"] = "подозрительная ссылка, реклама."
+                    self.result["findings"] = item.replace('.', '[.]')
                     return self.result
             self.result["result"] = 0
         else:
             self.filter_log.debug("# Text is None")
+        return self.result
+
+    @filter_log.catch
+    async def check_for_kreosan(self, text_to_check: str) -> dict:
+        """
+        Filter class method to check text for Kreosan from according list.
+
+        :type text_to_check: ``str``
+        :param text_to_check: Text to check.
+
+        :return: Returns the result as dictionary.
+        :rtype: ``dict``
+        """
+
+        if text_to_check:
+            await self.reset_results()
+            self.filter_log.debug("# # Checking for Kreosan")
+            text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
+            self.filter_log.debug(f"# Text after replacement: {text_to_check}")
+
+            await self.regex_check(Words_DB.blacklists.kreosan_list, text_to_check=text_to_check)
+
+            if self.discovered_words != []:
+                msg = f"Была найдена запрещёнка из мат-листа: '{self.discovered_words}'."
+                self.filter_log.debug(f"# {msg}")
+                self.result["result"] = 1
+                self.result["text"] = msg
+                self.result["case"] = "задрали со своим Креосаном."
+                self.result["findings"] = self.discovered_words
+                return self.result
+        else:
+            self.filter_log.debug("# Text is None")
+        self.result["result"] = 0
         return self.result
 
     @filter_log.catch
@@ -400,11 +446,12 @@ class Filter:
             await self.regex_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
 
             if self.discovered_words != []:
-                msg = f"Forbidden '{self.discovered_words}' from curses list was found."
+                msg = f"Была найдена запрещёнка из мат-листа: '{self.discovered_words}'."
                 self.filter_log.debug(f"# {msg}")
                 self.result["result"] = 1
                 self.result["text"] = msg
                 self.result["case"] = "нецензурные выражения."
+                self.result["findings"] = self.discovered_words
                 return self.result
         else:
             self.filter_log.debug("# Text is None")
@@ -514,7 +561,7 @@ class Filter:
     async def regex_check(self, regex_list, text_to_check: str):
         self.filter_log.debug("# Checking with provided list")
         for regex in regex_list:
-            self.filter_log.debug(f"# Regex: {regex}")
+            # self.filter_log.debug(f"# Regex: {regex}")
             matches = re.findall(f'\\w*{regex}\\w*', text_to_check, re.UNICODE)
             if matches:
                 self.filter_log.debug(f"# Regex matches: {matches}")

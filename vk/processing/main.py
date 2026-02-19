@@ -70,6 +70,7 @@ class VK_processing:
         # Result = 2 - suspicious
         self.result = {"result": 0, "text": "", "case": ""}
         self.send_msg_to_vk = send_msg_to_vk
+        self.send_result = None
         return self
 
     @vk_proc_log.catch
@@ -210,7 +211,8 @@ class VK_processing:
                 if delete_result["error"] == 0:
                     vk_proc_log.info("# Message was removed")
                     if self.send_msg_to_vk:
-                        send_result = await self.vk_messages.send(
+                        vk_proc_log.debug("# Sending message...")
+                        self.send_result = await self.vk_messages.send(
                             f"Сообщение от {username} было удалено автоматическим фильтром. Причина: {filter_result['case']}",
                             group_id,
                             peer_id,
@@ -218,17 +220,19 @@ class VK_processing:
                 else:
                     vk_proc_log.info("# Message was not removed")
                     if self.send_msg_to_vk:
-                        send_result = await self.vk_messages.send(
+                        vk_proc_log.debug("# Sending message...")
+                        self.send_result = await self.vk_messages.send(
                             f"# Сообщение от {username} не было удалено автоматическим фильтром.",
                             group_id,
                             peer_id,
                         )
+                vk_proc_log.debug(f"# Send result: {self.send_result}")
             # Comment remove
             else:
                 pass
 
             if self.send_msg_to_vk:
-                if send_result["error"] == 0:
+                if self.send_result["error"] == 0:
                     vk_proc_log.info(
                         f"# Service message was sent to {VK_config.chats[str(peer_id)]}",
                     )
