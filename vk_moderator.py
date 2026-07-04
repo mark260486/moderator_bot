@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: July 26, 2025
+# Reviewed: July 04, 2026
 from __future__ import annotations
 
 import argparse
@@ -59,20 +59,12 @@ async def main() -> None:
     if args.debug_enabled:
         logger.add(
             main_log_file,
-            level="DEBUG",
+            level="DEBUG" if args.debug_enabled else "INFO",
             format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
             rotation="1 MB",
-            retention=2,
+            retention=5,
         )
-        logger.debug("# VK moderator will run in Debug mode.")
-    else:
-        logger.add(
-            main_log_file,
-            level="INFO",
-            format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
-            rotation="1 MB",
-            retention=2,
-        )
+    logger.debug("# VK moderator will run in Debug mode.")
     main_log = logger.bind(name="main_log")
 
     # Telegram messages logging

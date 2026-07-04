@@ -24,11 +24,16 @@ class Telegram:
         Unmute_is_member: str = "member_name вылечивается от молчанки."
         Unmute_was_member: str = "member_name вылечивается от молчанки и покидает чат."
 
+    class FAQ:
+        local_faq_enabled: bool = True
+        remote_faq_enabled: bool = True
+        remote_faq_url: str = ""
+
     # Telegram DB for restricted users
     tlg_db_path: str = "/home/my_user/telegram.db"
 
     class Captcha:
-        """Parameters for chat Captcha."""
+        """Parameters for chat Captcha. Not use or choose one of the options below."""
         Enabled: bool = False
         Timeout_enabled: bool = True  # Not implemented yet. Will be there timeout for user's answer to captcha
         Button_enabled: bool = True  # Not implemented yet. The new user must click a button to proceed.
@@ -45,7 +50,15 @@ class Telegram:
         temp_button: str = "Да, я человек"
         Timeout_message: str = f"Увы, member_name, {Timeout} секунд прошло, ты не успел :("
 
+    class Channel_forward:
+        """Parameters for Telegram chats with topics."""
+        enabled: bool = False
+        forum_id: int = -1001436890713  # This is your Chat ID
+        thread_id: int = 64392  # This is your Topic ID
+        channel_id: int = -1001304165573  # This is your channel ID
+
     log_path = "/var/log/moderator_bot/tlg_moderator.log"
+    # log_path = "/var/log/moderator_bot/tlg_moderator.log"
     service_name: str = "tlg_moderator"
     # This is the limit for scam messages consisting of Telegram premium emoji
     emoji_length_limit: int = 10

@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from config.logs import Logs
 
 # DB settings
-CONNECTION_STRING = f"sqlite:////{Telegram.tlg_db_path}"
+CONNECTION_STRING = "sqlite:////home/mark/moderator_bot/telegram.db"
 Base = declarative_base()
 
 

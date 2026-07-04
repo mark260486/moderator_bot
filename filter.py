@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Reviewed: December 03, 2025
+# Reviewed: July 04, 2026
 from __future__ import annotations
 
 import re
@@ -81,6 +81,20 @@ class Filter:
         self.result = {"result": 0, "text": "", "case": "", "findings": ""}
         self.result_test.reset_results()
         self.discovered_words = []
+
+    @filter_log.catch
+    async def replacements(self, text_to_check: str) -> str:
+        text_to_check = text_to_check.lower()
+        replacements = {
+            "ё": "е",
+            "\n": " ",
+            '"': "",
+            "'": "",
+        }
+        for old, new in replacements.items():
+            text_to_check = text_to_check.replace(old, new)
+        self.filter_log.debug(f"# Text after replacement: {text_to_check}")
+        return text_to_check
 
     # Message filter. Returns dict with result and text
     @filter_log.catch
@@ -406,8 +420,7 @@ class Filter:
         if text_to_check:
             await self.reset_results()
             self.filter_log.debug("# # Checking for Kreosan")
-            text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
-            self.filter_log.debug(f"# Text after replacement: {text_to_check}")
+            text_to_check = await self.replacements(text_to_check)
 
             await self.regex_check(Words_DB.blacklists.kreosan_list, text_to_check=text_to_check)
 
@@ -439,8 +452,7 @@ class Filter:
         if text_to_check:
             await self.reset_results()
             self.filter_log.debug("# # Checking for curses")
-            text_to_check = text_to_check.replace("ё", "е").replace("\n", " ").lower()
-            self.filter_log.debug(f"# Text after replacement: {text_to_check}")
+            text_to_check = await self.replacements(text_to_check)
 
             await self.regex_check(Words_DB.blacklists.regex_list, text_to_check=text_to_check)
             await self.regex_check(Words_DB.blacklists.curses_list, text_to_check=text_to_check)
